@@ -73,9 +73,30 @@
 
 # ; (junta-listas-tamanho-igual '(1 3 4) '(5 3 2))
 
+(defun junta-listas-tamanho-igual (l1 l2)
+  (cond ((= (length l1) (length l2)) (append l1 l2))
+	(t l2)))
+
+
 # ; (dois-ultimos-elementos '(1 2 3 4 5 6 7))
 
+(defun dois-ultimos-elementos (l1)
+  (cond ((null l1) NIL)
+	(t (let ((size (length l1)))
+	     (cond ((< size 2) NIL)
+		   ((= size 2) l1)
+		   (t (subseq l1 (- size 2))))))))
+	
 # ; (palindromop '(1 2 3 2 1))
+
+(defun aux-palindromop (l1 l2 index size)
+  (cond ((>= index size) T)
+	(t (and (= (nth index l1) (nth index l2))
+		(aux-palindromop l1 l2 (+ index 1) size)))))
+
+(defun palindromop (l1)
+  (let ((l2 (reverse l1)) (size (length l1)))
+    (aux-palindromop l1 l2 0 (floor (/ size 2)))))
 
 # ; (criar-pares '(1 2 3) '(4 5 6))
 
