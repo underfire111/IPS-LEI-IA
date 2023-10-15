@@ -1,9 +1,9 @@
 
 ; (entre-intervalo 5 '(0 10))
 
-(defun entre-intervalo (x list)
-  (cond ((eq 2 (length list))
-	 (let ((m (reduce #'max list)) (n (reduce #'min list)))
+(defun entre-intervalo (x lst)
+  (cond ((eq 2 (length lst))
+	 (let ((m (reduce #'max lst)) (n (reduce #'min lst)))
 	   (cond ((and (> x n) (< x m))      
 		(format t "~d é maior que ~d e menor que ~d. ~C" x n m #\linefeed))
 		(t (format t "~d não é um número entre ~d e ~d. ~C" x n m #\linefeed)))))
@@ -22,17 +22,17 @@
 
 # ; (restop 10 5 0)
 (defun restop(dividendo divisor resto)
-  (cond ((eq divisor 0) NIL)
+  (cond ((eq divisor 0) nil)
 	(t (let ((compare (mod dividendo divisor)))
 	      (cond ((eq compare resto) T)
-		    (t NIL))))))
+		    (t nil))))))
 
 # ; (aprovadop '(13 15.6 5.5 7))
 (defun aprovadop(list)
-  (cond ((or (< 9.5 (first list)) (< 9.5 (fourth list))) NIL))
+  (cond ((or (< 9.5 (first list)) (< 9.5 (fourth list))) nil))
   (let ((media (/ (reduce #'+ list) 4)))
     (cond ((>= media 9.5) T)
-	  (t NIL))))
+	  (t nil))))
 	 
 
 # ; (nota-final '(10 12 15) '(25 25 50))
@@ -81,13 +81,24 @@
 # ; (dois-ultimos-elementos '(1 2 3 4 5 6 7))
 
 (defun dois-ultimos-elementos (l1)
-  (cond ((null l1) NIL)
+  (cond ((null l1) nil)
 	(t (let ((size (length l1)))
-	     (cond ((< size 2) NIL)
+	     (cond ((< size 2) nil)
 		   ((= size 2) l1)
 		   (t (subseq l1 (- size 2))))))))
 	
 # ; (palindromop '(1 2 3 2 1))
+
+#| 
+(defun aux-palindromop (l1 l2)
+  (cond ((null l1) T)
+	(t (and (equal (first l1) (first l2))
+		(aux-palindromop (rest l1) (rest l2))))))
+
+(defun palindromop (l1)
+  (let ((l2 (reverse l1)))
+    (aux-palindromop l1 l2)))
+|#
 
 (defun aux-palindromop (l1 l2 index size)
   (cond ((>= index size) T)
@@ -100,6 +111,31 @@
 
 # ; (criar-pares '(1 2 3) '(4 5 6))
 
+(defun aux-criar-pares (l1 l2)
+  (cond ((null l1) nil)
+	(t (cons (cons (first l1) (cons (first l2) nil))
+		 (aux-criar-pares (rest l1) (rest l2))))))
+
+(defun criar-pares (l1 l2)
+  (cond ((and (and (not (null l1)) (not (null l2))) (equal (length l1) (length l2)))
+	 (aux-criar-pares l1 l2))
+	(t (format t "As listas sao invalidas."))))
+
 # ; (verifica-pares '(1 2 3 4))
 
+(defun verifica-pares (lst)
+  (cond ((not (null lst))
+	 (cond ((evenp (first lst))
+		(cons T (verifica-pares (rest lst))))
+	       (t (cons nil (verifica-pares (rest lst))))))))
+
 # ; (rodar '(1 2 3 4) 'esq)
+
+(defun esq (lst)
+  (append (rest lst) (list (first lst))))
+
+(defun dir (lst)
+  (append (last lst) (butlast lst)))
+
+(defun rodar (lst func)
+  (funcall func lst))
