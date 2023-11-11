@@ -1,0 +1,88 @@
+
+
+(defun getNumber()
+  "Receives an input from the user and guarantees that it is a number"
+    (let ((value (read)))
+      (if (numberp value) (return-from getNumber value)))
+  (print "The answer must be a number!
+Please choose a number as an option:") 
+  (getNumber))
+
+(defun loadBoards(filename)
+  "Reads the filename and loads every board in it"
+  (let ((result '())
+        (current_problem '())
+        (current_board '()))
+    (with-open-file (file filename :direction :input :if-does-not-exist :error)
+      (loop for line = (read-line file nil)
+            while line
+            do
+              (cond ((char= #\P (char line 0))
+                     (setf current_problem (list (subseq line (1+ (position #\Space line)) (1- (length line)))))) ;; Gets the problem's name
+                    ((char= #\O (char line 0)) ;; Gets its objective
+                     (push (getObjective line) current_problem))
+                    ((char= #\- (char line 0)) ;; Separator between problems
+                     (push (reverse (copy-list current_board)) current_problem) ;; stores current problem
+                     (push (reverse (copy-list current_problem)) result)
+                     (setf current_board '()) ;; Resets variables
+                     (setf current_problem '()))
+                    (t 
+                     (push (getBoard line) current_board))))) ;; Gets the current board
+    (reverse result)))
+
+(defun getObjective(line)
+  "Parses the objetive to integer if it is a number, else returns random"
+  (let ((objective (subseq line (position #\Space line) (length line))))
+    (cond ((char= #\? (char objective 1)) 'random)
+          (t (parse-integer objective)))))
+
+
+(defun getBoards(line)
+  "Transforms the current line of the board into a list. If the line says random, it will return the string random"
+  (cond ((char= #\r (char line 0)) 'random)
+        (t 
+         (loop for start = 0 then (1+ end)
+               for end = (or (position #\Space line :start start) (1- (length line)))
+               while (and end (< start (length line)))
+               collect (let ((c (subseq line start end)))
+                         (cond ((or (equal c "NIL") (equal c "NI")) nil)
+                               (t (parse-integer c))))))))
+
+(defun printBoard(board)
+  "Prints the board"
+  (print "1"))
+
+(defun printInformationOfBoards(boards)
+  "Prints the informations about every board"
+  (cond ((null boards) nil)
+        ((characterp (first boards)) 
+         (format t "Problem ~a~%" (first boards))
+         (printBoards (rest boards)))
+        ((numberp (first boards)) 
+         (format t "Objective: ~a~%" (first boards))
+         (printBoards (rest boards)))
+        (t
+         (printBoard (first boards))
+         (print "-----------------------------"
+         (printBoards (rest boards))))))
+
+(defun printListOfBoards(boards)
+  "Print the list of all the boards available"
+  (cond ((listp (first boards)) 
+         (print "1")
+         (printListOfBoards (rest boards)))
+         ;;(printInformationOfBoards (first boards))
+         ;;(printListOfBoards (rest boards)))
+        (t
+         nil)))
+
+(defun test(path)
+    (let* ((file (concatenate 'string path "/problemas.dat"))
+           (boards (loadBoards file)))
+      (printListOfBoards boards)
+      (cond ((or (< 0 1) (>= 0 0)) 'random)
+            (t 'test)
+            ;; (getBoard file optionChoosen))
+      )
+))
+
