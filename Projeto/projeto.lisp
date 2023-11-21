@@ -43,15 +43,13 @@ Please choose a number as an option:")
 
 
 (defun getBoard(line)
-  "Transforms the current line of the board into a list. If the line says random, it will return the string random"
+  "Transforms the current line of the board into a list."
   (cond ((char= #\r (char line 0)) 'random)
         (t 
          (loop for start = 0 then (1+ end)
                for end = (or (position #\Space line :start start) (1- (length line)))
                while (and end (< start (length line)))
-               collect (let ((c (subseq line start (1+ end))))
-                         (cond ((or (equal c "NIL") (equal c "NIL ")) nil)
-                               (t (parse-integer c))))))))
+               collect (subseq line start (1+ end)))))) ;; Get the values as Strings
 
 
 ;;; Output Functions
@@ -59,7 +57,10 @@ Please choose a number as an option:")
 (defun printRow(line)
   "Prints a string"
   (cond ((null line) nil)
-        (t (format t "~a " (first line))
+        ((or (string= "NIL " (first line)) (string= "NIL" (first line)))
+         (format t "-- ")
+         (printRow (rest line)))
+        (t (format t "~a" (first line))
            (printRow (rest line)))))
 
 (defun printBoard(board)
@@ -96,12 +97,15 @@ Please choose a number as an option:")
 ;;; Main
 
 (defun test(path)
-    (let* ((file (concatenate 'string path "/problemas.dat"))
+  (print path)
+    (let* ((file (concatenate 'string path "problemas.dat"))
            (boards (loadBoards file)))
       (printListOfBoards boards)
       (format t "Choose the problem(the choice must be a number): ")
       (let ((option (getNumber)))
         (cond ((or (< option 1) (>= option (length boards))) 'random)
               (t 
-               (printInformationOfBoards (nth (1- option) boards)))))))
+               (printInformationOfBoards (nth (1- option) boards)))))
+      (cond ((null (fourth (first boards))) 'true)
+            (t 'false))))
 
