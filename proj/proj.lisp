@@ -1,16 +1,15 @@
-
-
 #####################################################################################
 
 ;; Loader
 
 (defun get-number()
   "Receives an input from the user and guarantees that it is a number"
-  (let ((value (read)))
+    (let ((value (read)))
       (if (numberp value) (return-from get-number value)))
   (print "The answer must be a number!
 Please choose a number as an option:") 
   (get-number))
+
 
 
 (defun load-boards(filename)
@@ -22,8 +21,9 @@ Please choose a number as an option:")
       (loop for line = (read-line file nil)
             while line
             do
-	       (cond ((char= #\P (char line 0))
-                     (setf current_problem (list (subseq line (1+ (position #\Space line)) (1- (length line)))))) ;; Gets the problem's name
+              (cond ((char= #\P (char line 0))
+                     (setf current_problem (list (subseq line (1+ (position #\Space line))
+							 (1- (length line)))))) ;; Gets the problem's name
                     ((char= #\O (char line 0)) ;; Gets its objective
                      (push (get-objective line) current_problem))
                     ((char= #\- (char line 0)) ;; Separator between problems
@@ -31,9 +31,9 @@ Please choose a number as an option:")
                      (push (reverse (copy-list current_problem)) result)
                      (setf current_board '()) ;; Resets variables
                      (setf current_problem '()))
-                    (t (push (get-board line) current_board))))) ;; Gets the current board
+                    (t 
+                     (push (get-board line) current_board))))) ;; Gets the current board
     (reverse result)))
-
 
 (defun get-objective(line)
   "Parses the objetive to integer if it is a number, else returns random"
@@ -53,14 +53,13 @@ Please choose a number as an option:")
                          (cond ((or (equal c "NIL") (equal c "NIL ")) nil)
                                (t (parse-integer c))))))))
 
-
 #####################################################################################
 
 ;; Board
 
-(defparameter positions-map (make-hash-table))
+(defparameter board (mount-board (shuffle-positions (list-positions))))
+(defparameter positions-map (make-hash-table :test 'equal))
 (defparameter score 0)
-(defparameter current-position)
 
 (defun list-positions ()
   (list "00" "01" "02" "03" "04" "05" "06" "07" "08" "09"
@@ -93,6 +92,7 @@ Please choose a number as an option:")
     (cond ((and lst (= (length lst) 100)) (split-into-rows lst 10))
 	  (t (error "Input list must contain 100 elements.")))))
 
+
 (defun populate-map-positions (table)
   (dotimes (i 10)
     (dotimes (j 10)
@@ -100,72 +100,98 @@ Please choose a number as an option:")
 	      (position (list i j)))
 	(setf (gethash value positions-map) position)))))
 
-(defun print-map-keys-sorted ()
-  (let ((keys ()))
-    (maphash #'(lambda (key value)
-		 (declare (ignore value))
-                 (push key keys))
-             positions-map)
-    (dolist (key (sort keys 'string<))
-      (format t "Key: ~a, Position: ~a~%" key (gethash key positions-map)))))
+;;; (populate-map-positions board)
 
 
+#####################################################################################
+
+;; Utils
+
+(defun clone-hash-table (table)
+  "Creates a shallow copy of a hash table."
+  (let ((new-table (make-hash-table
+                    :test (hash-table-test table)
+                    :size (hash-table-size table))))
+    (maphash #'(lambda(key value)
+                 (setf (gethash key new-table) value))
+             table)
+    new-table))
 
 (defun reverse-string (str)
+  "Reverse the characters in a string."
   (coerce (reverse (coerce str 'list)) 'string))
 
-;;; (populate-map-positions (mount-board (shuffle-positions (list-positions))))
-;;; (print-map-keys-sorted)
+(defun join-numbers-as-string (num1 num2)
+  "Join two numbers together as a string."
+  (concatenate 'string (write-to-string num1) (write-to-string num2)))
+
 
 #####################################################################################
 
 ;; Knight
 
-(defun knight-set-position (tbl x y)
-  (cond ((and (and (>= x 0) (< x 10)) (and (>= y 10) (< y 10)))
-	 (setf ((nth x (nth y tbl)) "kn")
-	       ()))
-	(t nil)))
+(defparameter curr-state (make-hash-table :test 'equal))
 
-(defun knight-can-move-to (tbl)
-  ;; knight current position [x,y]
-
-  ;; add ± 2 to the x or y axys and and then ±1 to the other and check if it is out
-  ;; of bounds
-
-  ;; if not, access the table in that same position and check if the value in there is null
-
-  ;; it shall return a list of T or NIL with size 8, which represents each move possible
-  ;; for a knight clockwise (1st: +2y +1x)
-
-  )
+(defun knight-start-position (x y)
+  (let ((new-state (make-hash-table :test 'equal))
+	 (value (nth x (nth y board))))
+    (setf (gethash "kn" new-state) (list x y)) ;; set knight on board
+    (setf (gethash (list x y) new-state) "#0") ;; add visited position
+    (incf score (parse-integer value)) ;; add up to score
+    (let ((temp (gethash (reverse-string value) positions-map)))
+      (cond ((not (equal temp value))
+	     (setf (gethash temp new-state) "#SYM"))
+	    (t))) ;; else #DBL
+    new-state))
 
 
-(defun knight-can-move ()
-  ;; returns whether T or NIL if the knight has any move available
+(defun knight-can-move-to (current-state)
+  (cond ((not (null (gethash "kn" current-state)))
+	 (let ((x (first (gethash "kn" current-state)))
+	       (y (second (gethash "kn" current-state)))
+	       (moves '()))
+	   (dolist (offset '((1 . 2) (2 . 1) (2 . -1) (1 . -2)
+			     (-1 . -2) (-2 . -1) (-2 . 1) (-1 . 2)))
+	     (let ((new-x (+ x (car offset)))
+		   (new-y (+ y (cdr offset))))
+	       (cond ((and (>= new-x 0) (<= new-x 9) (>= new-y 0) (<= new-y 9)
+			(not (gethash (list new-x new-y) current-state)))
+		   (push (list new-x new-y) moves))
+		   (t (push nil moves)))))
+	   (reverse moves)))))
 
-  )
 
-(defun knight-move-to (tbl x y)
+(defun knight-can-move (current-state)
+  (let ((next (knight-can-move-to current-state)))
+    (not (notany #'identity next))))
+
+
+(defun knight-validade-move (current-state move)
+  (let ((next (knight-can-move-to current-state)))
+    (and T (nth (- move 1) next))))
+
+
+(defun knight-do-move (current-state move)
+  (cond ((not (null current-state))
+	 (let ((next (knight-validade-move current-state move)))
+	   (cond (next
+		  (let ((value (nth (first next) (nth (second next) board))))
+		    (incf score (parse-integer value))
+		    (setf (gethash "kn" current-state) next)
+		    (setf (gethash next current-state) (format nil "#~a" move))
+		    (let ((temp (gethash (reverse-string value) positions-map)))
+		      (format t "~a ~a~%" value (reverse-string value))
+		      (cond ((not (equal temp value))
+			     (setf (gethash temp current-state) "#SYM"))
+			    (t)))))
+		 (t (error "Invalid move!")))
+	   current-state))
+	(t (error "Invalid state!"))))
+
+
+;;; O estado de cada iteracoes ha de ser composto por uma lista de movimentos feitos e as respetivas casas
+;;; Distancia percentual ao objetivo
   
-  (cond ((and (<= 0 x 9) (<= 0 y 9))
-	 (let* ((old-value (nth x (nth y tbl)))
-		(temp (gethash (reverse-string old-value) positions-map)))
-	   ;; set current position to nil
-	   (incf score (parse-integer old-value))				;; increment score
-	   (setf (nth x (nth y tbl)) "kn")					;; set knight position
-	   (setf (nth (first temp) (nth (second temp) tbl)) nil)		;; set symetric to nil
-	   )))
-  
-  ;; update the knight current position
-
-  ;; add the current value to its points
-
-  ;; remove the symetric/double value
-
-  )
-
-
 #####################################################################################
 
 ;; BFS
@@ -206,25 +232,43 @@ Please choose a number as an option:")
          (print-board (rest board)))))
 
 
-(defun printInformationOfBoards(boards)
+(defun print-boards-info(boards)
   "Prints the informations about every board"
   (cond ((null boards) nil)
         ((stringp (first boards)) 
          (format t "Problem ~a:~%" (first boards))
-         (printInformationOfBoards (rest boards)))
+         (print-boards-info (rest boards)))
         ((or (numberp (first boards)) (equal 'random (first boards))) 
          (format t "Objective: ~a~%" (first boards))
-         (printInformationOfBoards (rest boards)))
+         (print-boards-info (rest boards)))
         (t
          (format t "Board:~%")
-         (printBoard (first boards))
+         (print-board (first boards))
          (format t  "-----------------------------~%")
-         (printInformationOfBoards (rest boards)))))
+         (print-boards-info (rest boards)))))
 
-(defun printListOfBoards(boards)
+
+(defun print-boards(boards)
   "Print the list of all the boards available"
   (cond ((null boards) nil)
-        (t (printInformationOfBoards (first boards))
-           (printListOfBoards (rest boards)))))
+        (t (print-boards-info (first boards))
+           (print-boards (rest boards)))))
 
+
+(defun print-hash-map (tbl)
+  "Print a map"
+  (maphash #'(lambda (key value)
+	       (format t "Key: ~a, Position: ~a~%" key value))
+	   tbl))
+
+
+(defun print-hash-map-sorted (tbl)
+  "Print a map with its keys sorted"
+  (let ((keys ()))
+    (maphash #'(lambda (key value)
+		 (declare (ignore value))
+                 (push key keys))
+             tbl)
+    (dolist (key (sort keys 'string<))
+      (format t "Key: ~a, Position: ~a~%" key (gethash key tbl)))))
 
