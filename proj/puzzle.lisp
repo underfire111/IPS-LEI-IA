@@ -1,59 +1,3 @@
-#####################################################################################
-
-;; Loader
-
-(defun get-number()
-  "Receives an input from the user and guarantees that it is a number"
-    (let ((value (read)))
-      (if (numberp value) (return-from get-number value)))
-  (print "The answer must be a number!
-Please choose a number as an option:") 
-  (get-number))
-
-
-
-(defun load-boards(filename)
-  "Reads the filename and loads every board in it"
-  (let ((result '())
-        (current_problem '())
-        (current_board '()))
-    (with-open-file (file filename :direction :input :if-does-not-exist :error)
-      (loop for line = (read-line file nil)
-            while line
-            do
-              (cond ((char= #\P (char line 0))
-                     (setf current_problem (list (subseq line (1+ (position #\Space line))
-							 (1- (length line)))))) ;; Gets the problem's name
-                    ((char= #\O (char line 0)) ;; Gets its objective
-                     (push (get-objective line) current_problem))
-                    ((char= #\- (char line 0)) ;; Separator between problems
-                     (push (reverse (copy-list current_board)) current_problem) ;; stores current problem
-                     (push (reverse (copy-list current_problem)) result)
-                     (setf current_board '()) ;; Resets variables
-                     (setf current_problem '()))
-                    (t 
-                     (push (get-board line) current_board))))) ;; Gets the current board
-    (reverse result)))
-
-(defun get-objective(line)
-  "Parses the objetive to integer if it is a number, else returns random"
-  (let ((objective (subseq line (position #\Space line) (length line))))
-    (cond ((char= #\? (char objective 1)) 'random)
-          (t (parse-integer objective)))))
-
-
-(defun get-board(line)
-  "Transforms the current line of the board into a list. If the line says random, it will return the string random"
-  (cond ((char= #\r (char line 0)) 'random)
-        (t 
-         (loop for start = 0 then (1+ end)
-               for end = (or (position #\Space line :start start) (1- (length line)))
-               while (and end (< start (length line)))
-               collect (let ((c (subseq line start (1+ end))))
-                         (cond ((or (equal c "NIL") (equal c "NIL ")) nil)
-                               (t (parse-integer c))))))))
-
-#####################################################################################
 
 ;; Board
 
@@ -191,23 +135,15 @@ Please choose a number as an option:")
 
 ;;; O estado de cada iteracoes ha de ser composto por uma lista de movimentos feitos e as respetivas casas
 ;;; Distancia percentual ao objetivo
-  
-#####################################################################################
 
-;; BFS
+(defstruct (node (:conc-name node-))
+  current-state childs parent f g h)
 
+(defun node-add-child (node child)
+  (append (node-childs node) child))
 
-
-
-#####################################################################################
-
-;; DFS
-
-
-
-#####################################################################################
-
-;; A*
+(defun node-create (current-state parent f g h)
+  (make-node :current-state current-state :parent parent :childs '() :f f :g g :h h))
 
 
 #####################################################################################
