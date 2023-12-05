@@ -1,4 +1,3 @@
-#####################################################################################
 
 ;; BFS
 
@@ -12,8 +11,7 @@
                (pop queue))
              (visit-node (node)
 	       (setf (gethash node visited) t))
-             (enqueue-childs (node queue) ;; that function shall create the child nodes
-	       
+             (enqueue-childs (node queue) ;; that function shall create the child nodes	       
 	       )
              (bfs-traversal (queue)
                (when queue
@@ -21,10 +19,9 @@
                    (visit-node current-node)
                    (enqueue-childs current-node queue)
                    (bfs-traversal queue)))))
-      (bfs-traversal (list start-nod1e)))))
+      (bfs-traversal (list start-node)))))
 
 
-#####################################################################################
 
 ;; DFS
 (defun breadth-first-search (node)
@@ -32,7 +29,6 @@
   )
 
 
-#####################################################################################
 
 ;; A*
 (defun breadth-first-search (node)

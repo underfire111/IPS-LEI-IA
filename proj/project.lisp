@@ -1,8 +1,12 @@
 
+(defparameter board nil)
+(defparameter positions-map (make-hash-table :test 'equal))
 
-;;; Input Functions
+(load "~/Desktop/IA/proj/puzzle.lisp")
 
-(defun get-number()
+;; ### Inputs #################################################################################
+
+(defun get-number ()
   "Receives an input from the user and guarantees that it is a number"
     (let ((value (read)))
       (if (numberp value) (return-from get-number value)))
@@ -11,9 +15,10 @@ Please choose a number as an option:")
   (get-number))
 
 
-;;; Load Functions
 
-(defun load-boards(filename)
+;; ### Loads ##################################################################################
+
+(defun load-boards (filename)
   "Reads the filename and loads every board in it"
   (let ((result '())
         (current_problem '())
@@ -31,28 +36,27 @@ Please choose a number as an option:")
                      (push (reverse (copy-list current_problem)) result)
                      (setf current_board '()) ;; Resets variables
                      (setf current_problem '()))
-                    (t 
-                     (push (get-board line) current_board))))) ;; Gets the current board
+                    (t (push (get-board line) current_board))))) ;; Gets the current board
     (reverse result)))
 
-(defun get-objective(line)
+
+(defun get-objective (line)
   "Parses the objetive to integer if it is a number, else returns random"
   (let ((objective (subseq line (position #\Space line) (length line))))
     (cond ((char= #\? (char objective 1)) 'random)
           (t (parse-integer objective)))))
 
 
-(defun get-board(line)
+(defun get-board (line)
   "Transforms the current line of the board into a list."
   (cond ((char= #\r (char line 0)) 'random)
-        (t 
-         (loop for start = 0 then (1+ end)
+        (t (loop for start = 0 then (1+ end)
                for end = (or (position #\Space line :start start) (1- (length line)))
                while (and end (< start (length line)))
-               collect (subseq line start (1+ end)))))) ;; Get the values as Strings
+               collect (string-trim " " (subseq line start (1+ end))))))) ;; Get the values as Strings
 
 
-;;; Output Functions
+;; ### Outputs ################################################################################
 
 (defun print-row(line)
   "Prints a string"
@@ -60,19 +64,20 @@ Please choose a number as an option:")
         ((or (string= "NIL " (first line)) (string= "NIL" (first line)))
          (format t "-- ")
          (print-row (rest line)))
-        (t (format t "~a" (first line))
+        (t (format t "~a " (first line))
            (print-row (rest line)))))
 
-(defun print-board(board)
+
+(defun print-board (board)
   "Prints the board"
   (cond ((null board) nil)
         ((equal 'random (first board)) (format t "Random~%"))
-        (t
-         (print-row (first board))
+        (t (print-row (first board))
          (format t "~%")
          (print-board (rest board)))))
 
-(defun print-boards-information(boards)
+
+(defun print-boards-information (boards)
   "Prints the informations about every board"
   (cond ((null boards) nil)
         ((stringp (first boards)) 
@@ -81,31 +86,80 @@ Please choose a number as an option:")
         ((or (numberp (first boards)) (equal 'random (first boards))) 
          (format t "Objective: ~a~%" (first boards))
          (print-boards-information (rest boards)))
-        (t
-         (format t "Board:~%")
+        (t (format t "Board:~%")
          (print-board (first boards))
          (format t  "-----------------------------~%")
          (print-boards-information (rest boards)))))
 
-(defun print-boards-list(boards)
+
+(defun print-boards-list (boards)
   "Print the list of all the boards available"
   (cond ((null boards) nil)
         (t (print-boards-information (first boards))
            (print-boards-list (rest boards)))))
 
 
-;;; Main
+(defun print-hash-map (tbl)
+  "Print a map"
+  (maphash #'(lambda (key value)
+	       (format t "Key: ~a, Position: ~a~%" key value))
+	   tbl))
 
-(defun test(path)
-  (print path)
-    (let* ((file (concatenate 'string path "problemas.dat"))
+
+(defun print-hash-map-sorted (tbl)
+  "Print a map with its keys sorted"
+  (let ((keys ()))
+    (maphash #'(lambda (key value)
+		 (declare (ignore value))
+                 (push key keys))
+	     tbl)
+    (dolist (key (sort keys 'string<))
+      (format t "Key: ~a, Position: ~a~%" key (gethash key tbl)))))
+
+
+;; ### Main ###################################################################################
+
+(defun get-problem (userpath)
+  "Returns the goal to the selected problem"
+  (labels ((get-path(n)
+             "Returns a path to a respective user"
+             (cond ((equal n 1) "~/Desktop/IA/Paulo/proj/boards.dat")
+		   ((equal n 2) "~/Desktop/IA/proj/boards.dat")
+		   (t userpath))))
+    (let* ((file (get-path userpath))
            (boards (load-boards file)))
       (print-boards-list boards)
-      (format t "Choose the problem(the choice must be a number): ")
-      (let ((option (get-number)))
-        (cond ((or (< option 1) (>= option (length boards))) 'random)
-              (t 
-               (print-boards-information (nth (1- option) boards)))))
-      (cond ((null (fourth (first boards))) 'true)
-            (t 'false))))
+      (format t "Choose the problem (the choice must be a number): ")
+      (let* ((option (get-number))
+	     (temp nil))
+	(cond ((not (or (< option 1) (>= option (length boards))))
+	       (setf temp (nth (1- option) boards))
+ 	       (if (stringp (third temp)) (setf board (mount-board (shuffle-positions (list-positions))))
+		   (setf board (third temp)))
+	       (if (stringp (second temp)) (random 3245) (second temp)))
+	      (t (setf board (mount-board (shuffle-positions (list-positions))))
+		 (random 3245)))))))
+
+
+(defun initialize-state ()
+  "Initialize the state of the problem by getting the start position of the knight"
+  (populate-map-positions board)
+  (labels ((first-knight-position(first-row)
+               "Gets the first position of the knight"
+               (let ((position (get-number)))
+                 (if (and 
+                      (<= position 10) 
+                      (>= position 1) 
+                      (not (equal (nth (1- position) first-row) "NIL ")))
+                     (return-from  first-knight-position (1- position))))
+               (print "Please choose a number between [1;10] that isn't '--'")
+               (first-knight-position first-row)))
+    (print "Choose the position(number in [1;10] of the first row) to start the knight in: ")
+    (knight-start-position 0 (first-knight-position (first board)))))
+
+
+(defun main (userpath)
+  (let* ((goal (get-problem userpath)))
+    (cond ((= 70 goal) (print "ok")) (t (print "ko")))))
+        
 

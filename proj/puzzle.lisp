@@ -1,9 +1,4 @@
-
-;; Board
-
-(defparameter board (mount-board (shuffle-positions (list-positions))))
-(defparameter positions-map (make-hash-table :test 'equal))
-(defparameter score 0)
+;; ### Board ##################################################################################
 
 (defun list-positions ()
   (list "00" "01" "02" "03" "04" "05" "06" "07" "08" "09"
@@ -37,19 +32,15 @@
 	  (t (error "Input list must contain 100 elements.")))))
 
 
-(defun populate-map-positions (table)
+(defun populate-positions-map (table)
   (dotimes (i 10)
     (dotimes (j 10)
       (let* ((value (nth j (nth i table)))
 	      (position (list i j)))
 	(setf (gethash value positions-map) position)))))
 
-;;; (populate-map-positions board)
 
-
-#####################################################################################
-
-;; Utils
+;; ### Utils ##################################################################################
 
 (defun clone-hash-table (table)
   "Creates a shallow copy of a hash table."
@@ -69,19 +60,17 @@
   "Join two numbers together as a string."
   (concatenate 'string (write-to-string num1) (write-to-string num2)))
 
+;;; (defun get-doubles-available)
 
-#####################################################################################
 
-;; Knight
-
-(defparameter curr-state (make-hash-table :test 'equal))
+;; ### Knight #################################################################################
 
 (defun knight-start-position (x y)
+  "Places the knight at the board"
   (let ((new-state (make-hash-table :test 'equal))
 	 (value (nth x (nth y board))))
     (setf (gethash "kn" new-state) (list x y)) ;; set knight on board
     (setf (gethash (list x y) new-state) "#0") ;; add visited position
-    (incf score (parse-integer value)) ;; add up to score
     (let ((temp (gethash (reverse-string value) positions-map)))
       (cond ((not (equal temp value))
 	     (setf (gethash temp new-state) "#SYM"))
@@ -90,6 +79,7 @@
 
 
 (defun knight-can-move-to (current-state)
+  "Check for all possible moves."
   (cond ((not (null (gethash "kn" current-state)))
 	 (let ((x (first (gethash "kn" current-state)))
 	       (y (second (gethash "kn" current-state)))
@@ -106,105 +96,36 @@
 
 
 (defun knight-can-move (current-state)
+  "Check if the knight still have any move available."
   (let ((next (knight-can-move-to current-state)))
     (not (notany #'identity next))))
 
 
 (defun knight-validade-move (current-state move)
+  "Validate if the knight can do a certain move."
   (let ((next (knight-can-move-to current-state)))
     (and T (nth (- move 1) next))))
 
 
 (defun knight-do-move (current-state move)
+  "Execute a valid knight move"
   (cond ((not (null current-state))
 	 (let ((next (knight-validade-move current-state move)))
 	   (cond (next
 		  (let ((value (nth (first next) (nth (second next) board))))
-		    (incf score (parse-integer value))
 		    (setf (gethash "kn" current-state) next)
 		    (setf (gethash next current-state) (format nil "#~a" move))
 		    (let ((temp (gethash (reverse-string value) positions-map)))
 		      (format t "~a ~a~%" value (reverse-string value))
 		      (cond ((not (equal temp value))
 			     (setf (gethash temp current-state) "#SYM"))
-			    (t)))))
+			    (t))))) ;; DBL
 		 (t (error "Invalid move!")))
 	   current-state))
 	(t (error "Invalid state!"))))
 
 
-;;; O estado de cada iteracoes ha de ser composto por uma lista de movimentos feitos e as respetivas casas
-;;; Distancia percentual ao objetivo
-
-(defstruct (node (:conc-name node-))
-  current-state childs parent f g h)
-
-(defun node-add-child (node child)
-  (append (node-childs node) child))
-
-(defun node-create (current-state parent f g h)
-  (make-node :current-state current-state :parent parent :childs '() :f f :g g :h h))
+;;; (defparameter current-state (knight-start-position 0 0))
 
 
-#####################################################################################
-
-;; Prints
-
-
-(defun print-row(line)
-  "Prints a string"
-  (cond ((null line) nil)
-        (t (format t "~a " (first line))
-           (print-row (rest line)))))
-
-
-(defun print-board(board)
-  "Prints the board"
-  (cond ((null board) nil)
-        ((equal 'random (first board)) (format t "Random~%"))
-        (t
-         (print-row (first board))
-         (format t "~%")
-         (print-board (rest board)))))
-
-
-(defun print-boards-info(boards)
-  "Prints the informations about every board"
-  (cond ((null boards) nil)
-        ((stringp (first boards)) 
-         (format t "Problem ~a:~%" (first boards))
-         (print-boards-info (rest boards)))
-        ((or (numberp (first boards)) (equal 'random (first boards))) 
-         (format t "Objective: ~a~%" (first boards))
-         (print-boards-info (rest boards)))
-        (t
-         (format t "Board:~%")
-         (print-board (first boards))
-         (format t  "-----------------------------~%")
-         (print-boards-info (rest boards)))))
-
-
-(defun print-boards(boards)
-  "Print the list of all the boards available"
-  (cond ((null boards) nil)
-        (t (print-boards-info (first boards))
-           (print-boards (rest boards)))))
-
-
-(defun print-hash-map (tbl)
-  "Print a map"
-  (maphash #'(lambda (key value)
-	       (format t "Key: ~a, Position: ~a~%" key value))
-	   tbl))
-
-
-(defun print-hash-map-sorted (tbl)
-  "Print a map with its keys sorted"
-  (let ((keys ()))
-    (maphash #'(lambda (key value)
-		 (declare (ignore value))
-                 (push key keys))
-             tbl)
-    (dolist (key (sort keys 'string<))
-      (format t "Key: ~a, Position: ~a~%" key (gethash key tbl)))))
 
