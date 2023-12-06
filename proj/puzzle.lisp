@@ -1,3 +1,6 @@
+;; positions-map	| key: "value"  value: (z y)
+;; state-map		| key: (x y)    value: "#CODE" 
+
 ;; ### Board ##################################################################################
 
 (defun list-positions ()
@@ -36,8 +39,9 @@
   (dotimes (i 10)
     (dotimes (j 10)
       (let* ((value (nth j (nth i table)))
-	      (position (list i j)))
-	(setf (gethash value positions-map) position)))))
+	     (position (list j i)))
+	(if (not (null value))
+	    (setf (gethash value positions-map) position))))))
 
 
 ;; ### Utils ##################################################################################
@@ -84,12 +88,11 @@
 	 (let ((x (first (gethash "kn" current-state)))
 	       (y (second (gethash "kn" current-state)))
 	       (moves '()))
-	   (dolist (offset '((1 . 2) (2 . 1) (2 . -1) (1 . -2)
-			     (-1 . -2) (-2 . -1) (-2 . 1) (-1 . 2)))
-	     (let ((new-x (+ x (car offset)))
-		   (new-y (+ y (cdr offset))))
+	   (dolist (offset '((1 . 2) (2 . 1) (2 . -1) (1 . -2) (-1 . -2) (-2 . -1) (-2 . 1) (-1 . 2)))
+	     (let ((new-x (+ x (car offset))) (new-y (+ y (cdr offset))))
 	       (cond ((and (>= new-x 0) (<= new-x 9) (>= new-y 0) (<= new-y 9)
-			(not (gethash (list new-x new-y) current-state)))
+			   (not (gethash (list new-x new-y) current-state))
+			   (nth new-x (nth new-y board)))
 		   (push (list new-x new-y) moves))
 		   (t (push nil moves)))))
 	   (reverse moves)))))
@@ -101,16 +104,25 @@
     (not (notany #'identity next))))
 
 
-(defun knight-validade-move (current-state move)
-  "Validate if the knight can do a certain move."
-  (let ((next (knight-can-move-to current-state)))
-    (and T (nth (- move 1) next))))
+(defun knight-move-to (current-state coordinates)
+  (cond ((not (null current-state))
+	 (cond (coordinates
+		(let ((value (nth (first coordinates) (nth (second coordinates) board))))
+		  (setf (gethash "kn" current-state) coordinates)
+		  (setf (gethash coordinates current-state) "#MOV")
+		  (let ((temp (gethash (reverse-string value) positions-map)))
+		    (cond ((not (equal temp value))
+			   (setf (gethash temp current-state) "#SYM"))
+			  (t))))) ;; DBL
+	       (t (error "Invalid move!")))
+	 current-state)
+	(t (error "Invalid state!"))))
 
 
-(defun knight-do-move (current-state move)
+(defun knight-do-move (current-state next-generation move)
   "Execute a valid knight move"
   (cond ((not (null current-state))
-	 (let ((next (knight-validade-move current-state move)))
+	 (let ((next (nth move next-generation)))
 	   (cond (next
 		  (let ((value (nth (first next) (nth (second next) board))))
 		    (setf (gethash "kn" current-state) next)
@@ -124,8 +136,36 @@
 	   current-state))
 	(t (error "Invalid state!"))))
 
-
+d
 ;;; (defparameter current-state (knight-start-position 0 0))
 
+;; so para confirmar
+;; node e uma lista com:
+;; curr-state cur-score parent childs fgh
+;;     1          2       3      4     5
+;; ((1 0) (2 3) (3 4))
+;; ((1 0) (2 3) (3 4))
+
+
+(defun create-node (current-state &optional parent)
+  (let* ((coordinates (gethash "kn" current-state))
+	 (score (parse-integer (nth (first coordinates) (nth (second coordinates) board)))))
+    (list current-state
+	  (if (not (null parent)) (+ score (second parent)) score)
+	  (if (not (null parent)) parent nil)
+	  '())))
+
+
+(defun partenogenese (node &optional calculate_fgh)
+  (let ((possible-moves (knight-can-move-to (first node))))
+    (mapcar #'(lambda (coordinates)
+		"Creates a new node with the coordinates given"
+		(if (not (null coordinates))
+		    (let* ((child-state (knight-move-to (clone-hash-table (first node)) coordinates))
+			   (child-node (create-node child-state node)))
+		      (if (not (null calculate_fgh)) (funcall calculate_fgh child-node node))
+		      (if (null (fourth node)) (setf (fourth node) child-node) (append (fourth node) child-node))
+		      child-node)))
+	    possible-moves)))
 
 

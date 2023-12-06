@@ -1,9 +1,8 @@
+;; ### Globals ################################################################################
 
 (defparameter board nil)
-(defparameter positions-map (make-hash-table :test 'equal))
-
-(load "~/Desktop/IA/proj/puzzle.lisp")
-
+(defparameter scoren nil)
+(defparameter positions-map nil)
 ;; ### Inputs #################################################################################
 
 (defun get-number ()
@@ -15,8 +14,13 @@ Please choose a number as an option:")
   (get-number))
 
 
-
 ;; ### Loads ##################################################################################
+
+(defun get-path(file)
+  "Returns the path to the files"
+  (concatenate 'string "~/Desktop/IA/proj/" file))
+  
+(load (get-path "puzzle.lisp"))
 
 (defun load-boards (filename)
   "Reads the filename and loads every board in it"
@@ -28,7 +32,8 @@ Please choose a number as an option:")
             while line
             do
               (cond ((char= #\P (char line 0))
-                     (setf current_problem (list (subseq line (1+ (position #\Space line)) (1- (length line)))))) ;; Gets the problem's name
+                     (setf current_problem (list (subseq line (1+ (position #\Space line))
+							 (1- (length line)))))) ;; Gets the problem's name
                     ((char= #\O (char line 0)) ;; Gets its objective
                      (push (get-objective line) current_problem))
                     ((char= #\- (char line 0)) ;; Separator between problems
@@ -51,30 +56,29 @@ Please choose a number as an option:")
   "Transforms the current line of the board into a list."
   (cond ((char= #\r (char line 0)) 'random)
         (t (loop for start = 0 then (1+ end)
-               for end = (or (position #\Space line :start start) (1- (length line)))
-               while (and end (< start (length line)))
-               collect (string-trim " " (subseq line start (1+ end))))))) ;; Get the values as Strings
+		 for end = (or (position #\Space line :start start) (1- (length line)))
+		 while (and end (< start (length line)))
+		 collect (let ((value (string-trim " " (subseq line start (1+ end)))))
+			   (if (equal value "NIL") nil value)))))) ;; Get the values as Strings
 
 
 ;; ### Outputs ################################################################################
 
-(defun print-row(line)
-  "Prints a string"
-  (cond ((null line) nil)
-        ((or (string= "NIL " (first line)) (string= "NIL" (first line)))
-         (format t "-- ")
-         (print-row (rest line)))
-        (t (format t "~a " (first line))
-           (print-row (rest line)))))
-
-
 (defun print-board (board)
   "Prints the board"
-  (cond ((null board) nil)
-        ((equal 'random (first board)) (format t "Random~%"))
-        (t (print-row (first board))
-         (format t "~%")
-         (print-board (rest board)))))
+  (labels ((print-row(line)
+	     "Prints a string"
+	     (cond ((null line) nil)
+		   ((null (first line))
+		    (format t "-- ")
+		    (print-row (rest line)))
+		   (t (format t "~a " (first line))
+		      (print-row (rest line))))))
+    (cond ((null board) nil)
+	  ((equal 'random (first board)) (format t "Random~%"))
+	  (t (print-row (first board))
+	     (format t "~%")
+	     (print-board (rest board))))))
 
 
 (defun print-boards-information (boards)
@@ -119,31 +123,27 @@ Please choose a number as an option:")
 
 ;; ### Main ###################################################################################
 
-(defun get-problem (userpath)
+(defun get-problem ()
   "Returns the goal to the selected problem"
-  (labels ((get-path(n)
-             "Returns a path to a respective user"
-             (cond ((equal n 1) "~/Desktop/IA/Paulo/proj/boards.dat")
-		   ((equal n 2) "~/Desktop/IA/proj/boards.dat")
-		   (t userpath))))
-    (let* ((file (get-path userpath))
-           (boards (load-boards file)))
-      (print-boards-list boards)
-      (format t "Choose the problem (the choice must be a number): ")
-      (let* ((option (get-number))
-	     (temp nil))
-	(cond ((not (or (< option 1) (>= option (length boards))))
-	       (setf temp (nth (1- option) boards))
- 	       (if (stringp (third temp)) (setf board (mount-board (shuffle-positions (list-positions))))
-		   (setf board (third temp)))
-	       (if (stringp (second temp)) (random 3245) (second temp)))
-	      (t (setf board (mount-board (shuffle-positions (list-positions))))
-		 (random 3245)))))))
+  (let* ((file (get-path "boards.dat" ))
+	 (boards (load-boards file)))
+    (print-boards-list boards)
+    (format t "Choose the problem (the choice must be a number): ")
+    (let* ((option (get-number))
+	   (temp nil))
+      (cond ((not (or (< option 1) (>= option (length boards))))
+	     (setf temp (nth (1- option) boards))
+	     (if (stringp (third temp)) (setf board (mount-board
+						     (shuffle-positions (list-positions))))
+		 (setf board (third temp)))
+	     (if (stringp (second temp)) (random 3245) (second temp)))
+	    (t (setf board (mount-board (shuffle-positions (list-positions))))
+	       (random 3245))))))
 
 
 (defun initialize-state ()
   "Initialize the state of the problem by getting the start position of the knight"
-  (populate-map-positions board)
+  (populate-positions-map board)
   (labels ((first-knight-position(first-row)
                "Gets the first position of the knight"
                (let ((position (get-number)))
@@ -158,8 +158,9 @@ Please choose a number as an option:")
     (knight-start-position 0 (first-knight-position (first board)))))
 
 
-(defun main (userpath)
-  (let* ((goal (get-problem userpath)))
-    (cond ((= 70 goal) (print "ok")) (t (print "ko")))))
+(defun main ()
+  (let* ((goal (get-problem)))
+    (setf positions-map (make-hash-table :test 'equal))
+    (populate-positions-map board)))
         
 
