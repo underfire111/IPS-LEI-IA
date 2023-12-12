@@ -43,8 +43,40 @@
 	(if (not (null value))
 	    (setf (gethash value positions-map) position))))))
 
+(defun get-problem ()
+  "Returns the goal to the selected problem and initializes the board."
+  (let* ((file (get-path "boards.dat" ))
+	 (boards (load-boards file)))
+    (print-boards-list boards)
+    (format t "Choose the problem (the choice must be a number): ")
+    (let* ((option (get-number))
+	   (temp nil))
+      (cond ((not (or (< option 1) (>= option (length boards))))
+	     (setf temp (nth (1- option) boards))
+	     (if (stringp (third temp)) (setf board (mount-board
+						     (shuffle-positions (list-positions))))
+		 (setf board (third temp)))
+	     (if (stringp (second temp)) (random 3245) (second temp)))
+	    (t (setf board (mount-board (shuffle-positions (list-positions))))
+	       (random 3245))))))
+
 
 ;; ### Utils ##################################################################################
+
+(defun init-open-list(&optional calculate_fgh)
+  "Initializes the open list of nodes"
+  (let ((nodes '()))
+    (mapcar #'(lambda(value)
+		"Creates the nodes with the values"
+	       (let* ((coordinates (gethash value positions-map))
+		      (init-state (knight-start-position (first coordinates) (second coordinates)))
+		      (child (create-node init-state)))
+		 (cond ((null calculate_fgh) (push child nodes))
+		       (t (let* ((h (funcall calculate_fgh child))
+				 (f (list h 0 h)))
+			(push (append child f) nodes))))))
+	    (remove-nil (first board)))
+    (reverse nodes)))
 
 (defun clone-hash-table (table)
   "Creates a shallow copy of a hash table."
@@ -60,9 +92,22 @@
   "Reverse the characters in a string."
   (coerce (reverse (coerce str 'list)) 'string))
 
+(defun remove-nil(lst)
+  "Removes all the nil values of the list"
+  (let ((values '()))
+    (mapcar #'(lambda(value)
+		(if (not (null value)) (push value values)))
+	    lst)
+    (reverse values)))
+
 (defun join-numbers-as-string (num1 num2)
   "Join two numbers together as a string."
   (concatenate 'string (write-to-string num1) (write-to-string num2)))
+
+(defun depth(node)
+  "Calculates the depth of the node"
+  (cond ((null node) 0)
+	(t (1+ (depth (third node))))))
 
 ;;; (defun get-doubles-available)
 
@@ -88,7 +133,8 @@
 	 (let ((x (first (gethash "kn" current-state)))
 	       (y (second (gethash "kn" current-state)))
 	       (moves '()))
-	   (dolist (offset '((1 . 2) (2 . 1) (2 . -1) (1 . -2) (-1 . -2) (-2 . -1) (-2 . 1) (-1 . 2)))
+	   (dolist (offset '((1 . 2) (2 . 1) (2 . -1) (1 . -2)
+			     (-1 . -2) (-2 . -1) (-2 . 1) (-1 . 2)))
 	     (let ((new-x (+ x (car offset))) (new-y (+ y (cdr offset))))
 	       (cond ((and (>= new-x 0) (<= new-x 9) (>= new-y 0) (<= new-y 9)
 			   (not (gethash (list new-x new-y) current-state))
@@ -136,36 +182,71 @@
 	   current-state))
 	(t (error "Invalid state!"))))
 
-d
-;;; (defparameter current-state (knight-start-position 0 0))
 
-;; so para confirmar
+
+;; ### Node #################################################################################
+
 ;; node e uma lista com:
 ;; curr-state cur-score parent childs fgh
 ;;     1          2       3      4     5
-;; ((1 0) (2 3) (3 4))
-;; ((1 0) (2 3) (3 4))
 
 
 (defun create-node (current-state &optional parent)
   (let* ((coordinates (gethash "kn" current-state))
-	 (score (parse-integer (nth (first coordinates) (nth (second coordinates) board)))))
+	 (curr-score (parse-integer (nth (first coordinates) (nth (second coordinates) board)))))
     (list current-state
-	  (if (not (null parent)) (+ score (second parent)) score)
+	  (if (not (null parent)) (+ curr-score (second parent)) curr-score)
 	  (if (not (null parent)) parent nil)
 	  '())))
 
+(defun partenogenese(node &optional calculate_fgh)
+  (mapcar #'(lambda(coordinates)
+	      "Creates a node moving the knight to the coordinates"
+	      (let ((child (create-node (knight-move-to (clone-hash-table (first node)) coordinates) node)))
+		(cond ((not (null calculate_fgh))
+		       (let* ((h (funcall calculate_fgh child))
+			      (g (1+ (fifth node)))
+			      (f (list (+ g h) g h)))
+			 (append child f)))
+		      (t child))))
+	  (remove-nil (knight-can-move-to (first node)))))
 
-(defun partenogenese (node &optional calculate_fgh)
-  (let ((possible-moves (knight-can-move-to (first node))))
-    (mapcar #'(lambda (coordinates)
-		"Creates a new node with the coordinates given"
-		(if (not (null coordinates))
-		    (let* ((child-state (knight-move-to (clone-hash-table (first node)) coordinates))
-			   (child-node (create-node child-state node)))
-		      (if (not (null calculate_fgh)) (funcall calculate_fgh child-node node))
-		      (if (null (fourth node)) (setf (fourth node) child-node) (append (fourth node) child-node))
-		      child-node)))
-	    possible-moves)))
+;; ### Heuristic #################################################################################
+
+(defun percentual-distance(node)
+  "Calculates the percentage that the node has to get to be equal to score"
+  (* 100 (/ (second node) score)))
+
+(defun enunciation-heuristic(node)
+  "Calculates the average points of the board and divides it by the number of points to be at the objective"
+  (labels ((get-keys(map)
+	     "Returns a list with only the values in the board as strings"
+	     (let ((keys '()))
+	       (maphash #'(lambda(k v) (push k keys)) map)
+	       keys))
+	   (get-sum-values(list-keys)
+	     "Returns the sum of the values in the list"
+	     (reduce #'(lambda(v1 v2)
+			 (cond ((or (equal "kn" v1) (equal "kn" v2) (null v1) (null v2)) 0)
+			       ((listp v1) (+ (parse-integer (nth (first v1) (nth (second v1) board))) (parse-integer (nth (first v2) (nth (second v2) board)))))
+			       ((listp v2) (+ v1 (parse-integer (nth (first v2) (nth (second v2) board)))))
+			       ((stringp v1) (+ (parse-integer v1) (parse-integer v2)))
+			       (t (+ v1 (parse-integer v2)))))
+		     list-keys)))
+    (let* ((all-values (get-keys positions-map))
+	   (removed-values (get-keys (first node)))
+	   (length-list (- (length all-values) (length removed-values)))
+	   (aux-score (- score (second node))))
+      (if (= 0 aux-score) (setf aux-score 1))
+      (if (= 0 length-list) (setf length-list 1))
+      (/ (/ (- (get-sum-values all-values) (get-sum-values removed-values)) length-list) aux-score))))
+
+;; ### Metrics #################################################################################
+
+(defun penetrance(len-path total-number-nodes)
+  "Calculates the penetrance"
+  (format t "Penetrance: ~a~%" (/ len-path total-number-nodes)))
+
+;; Branching factor
 
 

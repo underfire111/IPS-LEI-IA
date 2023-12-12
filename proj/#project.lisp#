@@ -148,6 +148,7 @@
 ;;       IDA
 ;;       RBFS
 ;;       Second Heuristic
+;;       Criar lista nos fechados para validar se ja nao passamos aquele no
 
 (defun main ()
   (setf score (get-problem))

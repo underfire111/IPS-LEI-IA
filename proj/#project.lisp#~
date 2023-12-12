@@ -22,7 +22,6 @@
   (concatenate 'string "~/Desktop/IA/proj/" file))
   
 (load (get-path "puzzle.lisp"))
-(load (get-path "search.lisp"))
 
 (defun load-boards (filename)
   "Reads the filename and loads every board in it"
@@ -144,11 +143,121 @@
 
 ;; ### Main ###################################################################################
 
-;; TODO: Branching factor
-;;       IDA
-;;       RBFS
-;;       Second Heuristic
+(defun get-problem ()
+  "Returns the goal to the selected problem"
+  (let* ((file (get-path "boards.dat" ))
+	 (boards (load-boards file)))
+    (print-boards-list boards)
+    (format t "Choose the problem (the choice must be a number): ")
+    (let* ((option (get-number))
+	   (temp nil))
+      (cond ((not (or (< option 1) (>= option (length boards))))
+	     (setf temp (nth (1- option) boards))
+	     (if (stringp (third temp)) (setf board (mount-board
+						     (shuffle-positions (list-positions))))
+		 (setf board (third temp)))
+	     (if (stringp (second temp)) (random 3245) (second temp)))
+	    (t (setf board (mount-board (shuffle-positions (list-positions))))
+	       (random 3245))))))
 
+(defun init-open-list(&optional calculate_fgh)
+  "Initializes the open list of nodes"
+  (let ((nodes '()))
+    (mapcar #'(lambda(value)
+		"Creates the nodes with the values"
+	       (let* ((coordinates (gethash value positions-map))
+		      (init-state (knight-start-position (first coordinates) (second coordinates)))
+		      (child (create-node init-state)))
+		 (cond ((null calculate_fgh) (push child nodes))
+		       (t (let* ((h (funcall calculate_fgh child))
+				 (f (list h 0 h)))
+			(push (append child f) nodes))))))
+	    (remove-nil (first board)))
+    (reverse nodes)))
+
+(defun remove-nil(lst)
+  "Removes all the nil values of the list"
+  (let ((values '()))
+    (mapcar #'(lambda(value)
+		(if (not (null value)) (push value values)))
+	    lst)
+    (reverse values)))
+
+(defun bfs()
+  "Breadth-First Search alghorithm"
+  (let ((list-open-nodes (init-open-list)))
+    (labels ((alghorithm (root)
+	       "BFS algorithm"
+	       (cond ((<= score (second root)) root)
+		     (t (setf list-open-nodes (append list-open-nodes (partenogenese root)))
+			(if (not (null list-open-nodes)) (alghorithm (pop list-open-nodes)))))))
+      (alghorithm (pop list-open-nodes)))))
+
+(defun dfs()
+  "Depth-First Search alghorithm"
+  (let ((list-open-nodes (init-open-list)))
+    (labels ((alghorithm (root)
+	       "DFS algorithm"
+	       (cond ((<= score (second root)) root)
+		     (t (setf list-open-nodes (append (partenogenese root) list-open-nodes))
+			(if (not (null list-open-nodes)) (alghorithm (pop list-open-nodes)))))))
+      (alghorithm (pop list-open-nodes)))))
+
+(defun percentual-distance(node)
+  "Calculates the percentage that the node has to get to be equal to score"
+  (* 100 (/ (second node) score)))
+
+(defun aux-a-percentual-distance(n1 n2)
+  "Auxialiar method to sort the value in the open nodes list of A* algorithm. Checks if node1 as a  greater cost than node2"
+  (> (fifth n1) (fifth n2)))
+
+(defun a(heuristic)
+  "A* alghorithm"
+  (let ((list-open-nodes (sort (init-open-list heuristic) #'aux-a-percentual-distance)))
+    (labels ((alghorithm (root)
+	       "A* algorithm"
+	       (cond ((<= score (second root)) root)
+		     (t (setf list-open-nodes (sort (append list-open-nodes (partenogenese root heuristic)) #'aux-a-percentual-distance))
+			(if (not (null list-open-nodes)) (alghorithm (pop list-open-nodes)))))))
+      (alghorithm (pop list-open-nodes)))))
+
+(defun ida()
+  "IDA alghorithm"
+  (let ((list-open-nodes (sort 
+
+(defun enunciation-heuristic(node)
+  "Calculates the average points of the board and divides it by the number of points to be at the objective"
+  (labels ((get-keys(map)
+	     "Returns a list with only the values in the board as strings"
+	     (let ((keys '()))
+	       (maphash #'(lambda(k v) (push k keys)) map)
+	       keys))
+	   (get-sum-values(list-keys)
+	     "Returns the sum of the values in the list"
+	     (reduce #'(lambda(v1 v2)
+			 (cond ((or (equal "kn" v1) (equal "kn" v2)) 0)
+			       ((listp v1) (+ (parse-integer (nth (first v1) (nth (second v1) board))) (parse-integer (nth (first v2) (nth (second v2) board)))))
+			       ((listp v2) (+ v1 (parse-integer (nth (first v2) (nth (second v2) board)))))
+			       ((stringp v1) (+ (parse-integer v1) (parse-integer v2)))
+			       (t (+ v1 (parse-integer v2)))))
+		     list-keys)))
+    (cond ((> score (second node))
+	   (let* ((all-values (get-keys positions-map))
+		 (removed-values (get-keys (first node)))
+		 (length-list (- (length all-values) (length removed-values))))
+	     (cond ((> length-list 0)
+		    (/
+		     (/
+		      (- (get-sum-values all-values) (get-sum-values removed-values))
+		      length-list)
+		     (- score (second node))))
+		   (t (/
+		       (/
+			(- (get-sum-values all-values) (get-sum-values removed-values))
+			1)
+		       (- score (second node)))))))
+	  (t 0))))
+      
 (defun main ()
   (setf score (get-problem))
   (setf positions-map (make-hash-table :test 'equal))
@@ -160,40 +269,27 @@
   (format t "-----------------------------~%DFS~%")
   (print-final-result (dfs))
   (format t "-----------------------------~%A*~%Heuristic: Percentual Distance~%")
-  (print-final-result (a* #'percentual-distance
-			  #'(lambda(n1 n2)
-			      (> (fifth n1) (fifth n2)))))
+  (print-final-result (a #'percentual-distance))
   (format t "Heuristic: Enunciation~%")
-  (print-final-result (a* #'enunciation-heuristic
-			  #'(lambda(n1 n2)
-			      (< (fifth n1) (fifth n2))))))
+  (print-final-result (a #'enunciation-heuristic)))
 
 (defun test()
   (setf score (get-problem))
   (setf positions-map (make-hash-table :test 'equal))
   (populate-positions-map board)
   (format t "-----------------------------~%A*~%Heuristic: Percentual Distance~%")
-  (print-final-result (a* #'percentual-distance
-			  #'(lambda(n1 n2)
-			      "Auxialiar method to sort the value in the open nodes list of A* algorithm. Checks if node1 as a  greater cost than node2"
-			      (> (fifth n1) (fifth n2)))))
-  (print ""))
+  (print-final-result (a #'percentual-distance)))
 
 (defun test1()
   (setf score (get-problem))
   (setf positions-map (make-hash-table :test 'equal))
   (populate-positions-map board)
   (format t "-----------------------------~%DFS~%")
-  (print-final-result (dfs))
-  (print ""))
+  (print-final-result (dfs)))
 
 (defun test2()
   (setf score (get-problem))
   (setf positions-map (make-hash-table :test 'equal))
   (populate-positions-map board)
-  (format t "-----------------------------~%BFS~%")
-  (print-final-result (bfs))
-  (print ""))
-
-(defun test3()
+  (format t "-----------------------------~%DFS~%")
   (print-final-result (bfs)))
