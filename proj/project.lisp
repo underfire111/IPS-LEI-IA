@@ -196,4 +196,16 @@
   (print ""))
 
 (defun test3()
-  (print-final-result (bfs)))
+  (setf score (get-problem))
+  (setf positions-map (make-hash-table :test 'equal))
+  (populate-positions-map board)
+  (format t "-----------------------------~%Objective:~a~%Board~%" score)
+  (print-board board)
+  (format t "-----------------------------~%A*~%Heuristic: Percentual Distance~%")
+  (print-final-result (a* #'percentual-distance
+			  #'(lambda(n1 n2)
+			      (> (fifth n1) (fifth n2)))))
+  (format t "Heuristic: Enunciation~%")
+  (print-final-result (a* #'enunciation-heuristic
+			  #'(lambda(n1 n2)
+			      (< (fifth n1) (fifth n2))))))
