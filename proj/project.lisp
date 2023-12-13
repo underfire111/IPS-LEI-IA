@@ -20,7 +20,7 @@
 (defun get-path(file)
   "Returns the path to theh files"
   (concatenate 'string "~/Desktop/IA/proj/" file))
-  
+
 (load (get-path "puzzle.lisp"))
 (load (get-path "search.lisp"))
 
@@ -32,15 +32,16 @@
     (with-open-file (file filename :direction :input :if-does-not-exist :error)
       (loop for line = (read-line file nil)
             while line do (cond ((char= #\P (char line 0))
-		      (setf current_problem
-			    (list (subseq line (1+ (position #\Space line)) (1- (length line))))))
-		     ((char= #\O (char line 0)) (push (get-objective line) current_problem))
-		     ((char= #\- (char line 0))
-		      (push (reverse (copy-list current_board)) current_problem)
-		      (push (reverse (copy-list current_problem)) result)
-		      (setf current_board '())
-		      (setf current_problem '()))
-		     (t (push (get-board line) current_board)))))
+				 (setf current_problem
+				       (list (subseq line (1+ (position #\Space line))
+						     (1- (length line))))))
+				((char= #\O (char line 0)) (push (get-objective line) current_problem))
+				((char= #\- (char line 0))
+				 (push (reverse (copy-list current_board)) current_problem)
+				 (push (reverse (copy-list current_problem)) result)
+				 (setf current_board '())
+				 (setf current_problem '()))
+				(t (push (get-board line) current_board)))))
     (reverse result)))
 
 
@@ -113,8 +114,8 @@
          (format t "Objective: ~a~%" (first boards))
          (print-boards-information (rest boards)))
         (t (format t "Board:~%")
-         (print-board (first boards))
-         (print-boards-information (rest boards)))))
+	   (print-board (first boards))
+	   (print-boards-information (rest boards)))))
 
 
 (defun print-boards-list (boards)
