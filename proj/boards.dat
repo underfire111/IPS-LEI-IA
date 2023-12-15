@@ -63,15 +63,7 @@ NIL NIL NIL 09 NIL NIL NIL 19 NIL NIL
 NIL 01 NIL NIL NIL 11 NIL NIL NIL 21
 NIL NIL NIL 10 NIL NIL NIL 20 NIL NIL
 -----------------------------
-Problema F:
-Objective: 2000
-random
------------------------------
-Problem G:
-Objective: ??? 
-random
------------------------------
-Problem 1:
+Problem F:
 Objective: ???
 00 01 02 03 04 05 06 07 08 09
 10 11 12 13 14 15 16 17 18 19
@@ -84,7 +76,7 @@ Objective: ???
 80 81 82 83 84 85 86 87 88 89
 90 91 92 93 94 95 96 97 98 99
 -----------------------------
-Problem 2:
+Problem G:
 Objective: ???
 92 52 04 33 15 20 30 23 82 94
 18 51 22 08 35 59 69 61 36 49
@@ -97,7 +89,7 @@ Objective: ???
 56 01 71 39 84 77 03 25 63 66
 65 90 89 45 46 02 57 31 86 53
 -----------------------------
-Problem 3:
-Objective: ???
+Problema H:
+Objective: 2000
 random
 -----------------------------

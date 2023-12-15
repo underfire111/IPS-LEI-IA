@@ -4,6 +4,7 @@
 ;; ### Board ################################################################################
 
 (defun list-positions ()
+  "List all values possible."
   (list "00" "01" "02" "03" "04" "05" "06" "07" "08" "09"
 	"10" "11" "12" "13" "14" "15" "16" "17" "18" "19"
 	"20" "21" "22" "23" "24" "25" "26" "27" "28" "29"
@@ -17,6 +18,7 @@
 
 
 (defun shuffle-positions (lst)
+  "Shiffle a list."
   (labels
       ((shuffle-helper (lst n)
 	 (cond ((<= n 1) lst)
@@ -37,6 +39,7 @@
 
 
 (defun mount-board (lst)
+  "Mounts the board froma list."
   (labels ((split-into-rows (lst row-size)
              (cond ((null lst) nil)
 		   (t (cons (subseq lst 0 row-size)
@@ -46,6 +49,7 @@
 
 
 (defun populate-positions-map (table)
+  "Populate the map with all all the values and its positions."
   (dotimes (i 10)
     (dotimes (j 10)
       (let* ((value (nth j (nth i table)))
@@ -59,99 +63,18 @@
   (let* ((file (get-folder-path "boards.dat" ))
 	 (boards (load-boards file)))
     ; (print-boards-list boards)
-    (format t "Choose the problem (the choice must be a number): ")
     (let* ((option (get-number))
 	   (temp nil)
 	   (cap (random (- 3245 1545)))) ;; CAP
-      (cond ((not (or (< option 1) (>= option (length boards))))
+      (cond ((not (or (< option 1) (> option (length boards))))
 	     (setf temp (nth (1- option) boards))
-	     (if (stringp (third temp))
+	     (if (equal (first (third temp)) 'random)
 		 (setf board (mount-board (shuffle-positions (list-positions))))
 		 (setf board (third temp)))
-	     (if (stringp (second temp)) cap (second temp)))
+	     (if (equal (second temp) 'random) cap (second temp)))
 	    (t (setf board (mount-board (shuffle-positions (list-positions))))
 	       cap)))))
 
-
-;; ### Utils ###############################################################################
-
-(defun get-hash-table-keys(tbl)
-  "Returns a list with only the values in the board as strings"
-  (let ((keys '()))
-    (maphash #'(lambda (k v) (declare (ignore v)) (push k keys)) tbl)
-    keys))
-
-(defun init-open-list(&optional heuristic)
-  "Initializes the open list of nodes"
-  (let ((nodes '()))
-    (mapcar #'
-     (lambda (value)
-       "Creates the nodes with the values"
-       (let* ((coordinates (gethash value positions-map))
-	      (init-state (knight-start-position (first coordinates) (second coordinates)))
-	      (child (create-node init-state)))
-	 (cond ((null heuristic) (push child nodes))
-	       (t (let* ((h (funcall heuristic child))
-			 (f (list h 0 h)))
-		    (push (append child (list f)) nodes))))))
-     (remove-nil (first board)))
-    (reverse nodes)))
-
-
-(defun get-doubles ()
-  '("99" "88" "77" "66" "55" "44" "33" "22" "11" "00"))
-
-
-(defun clone-hash-table (table)
-  "Creates a shallow copy of a hash table."
-  (let ((new-table (make-hash-table
-                    :test (hash-table-test table)
-                    :size (hash-table-size table))))
-    (maphash #'(lambda(key value)
-                 (setf (gethash key new-table) value))
-             table)
-    new-table))
-
-
-(defun remove-nil(lst)
-  "Removes all the nil values of the list"
-  (let ((values '()))
-    (mapcar #'(lambda(value) (if (not (null value)) (push value values))) lst)
-    (reverse values)))
-
-
-(defun join-numbers-as-string (num1 num2)
-  "Join two numbers together as a string."
-  (concatenate 'string (write-to-string num1) (write-to-string num2)))
-
-
-(defun reverse-string (str)
-  "Reverse the characters in a string."
-  (coerce (reverse (coerce str 'list)) 'string))
-
-
-(defun remove-symetric-or-double (current-state value)
-  (let ((temp (reverse-string value)))
-    (cond ((not (equal temp value))
-	   (if (gethash temp positions-map)
-	       (setf (gethash (gethash temp positions-map) current-state) "#SYM")))
-	  (t (let ((doubles
-		     (remove-nil
-		      (mapcar #'
-		       (lambda (key)
-			 (let ((double-coordinate (gethash key positions-map)))
-			   (if (and double-coordinate
-				    (null (gethash double-coordinate current-state)))
-			       double-coordinate))) 
-		       (get-doubles)))))
-	       (if (null (gethash (first doubles) current-state))
-		   (setf (gethash (first doubles) current-state) "#DBL")))))))
-
-
-(defun validate-childs (childs)
-  (cond ((null childs) nil)
-	((>= (second (first childs)) score) (first childs))
-	(t (validate-childs (rest childs)))))
 
 ;; ### Knight ##############################################################################
 
@@ -189,6 +112,7 @@
 
 
 (defun knight-move-to (current-state coordinates)
+  "If possible, move the knight to the given location"
   (cond ((not (null current-state))
 	 (cond (coordinates
 		(let ((value (nth (first coordinates) (nth (second coordinates) board))))
@@ -205,6 +129,15 @@
 ;; node e uma lista com:
 ;; state score parent fgh
 ;;   1     2     3     4
+
+
+(defun create-node (state &optional parent)
+  (let* ((coordinates (gethash "kn" state))
+	 (score (parse-integer (nth (first coordinates) (nth (second coordinates) board)))))
+    (list state
+	  (if (not (null parent)) (+ score (get-node-score parent)) score)
+	  (if (not (null parent)) parent nil))))
+
 
 (defun get-node-depth (node)
   (cond ((not (null (get-node-fgh node))) (second (get-node-fgh node)))
@@ -228,18 +161,10 @@
   (fourth node))
 
 
-(defun create-node (state &optional parent)
-  (let* ((coordinates (gethash "kn" state))
-	 (score (parse-integer (nth (first coordinates) (nth (second coordinates) board)))))
-    (list state
-	  (if (not (null parent)) (+ score (get-node-score parent)) score)
-	  (if (not (null parent)) parent nil))))
-
-
 (defun partenogenese(node &optional heuristic)
   (mapcar #'
    (lambda (coordinates)
-     "Creates a node moving the knight to the coordinates"
+     "Creates a node moving the knight to the coordinates."
      (let ((child
 	     (create-node
 	      (knight-move-to
@@ -255,18 +180,19 @@
 	     (t child))))
    (remove-nil (knight-can-move-to (get-node-state node)))))
 
+
 ;; ### Heuristic ###########################################################################
 
 (defun percentual-distance(node)
-  "Calculates the percentage that the node has to get to be equal to score"
+  "Calculates the percentage that the node has to get to be equal to score."
   (* 100 (/ (get-node-score node) score)))
 
 
 (defun enunciation-heuristic (node)
-  "Calculates the average points of the board and divides it by the number of points to be at the objective"
+  "Calculates the average points of the board and divides it by the number of points to be at the objective."
   (labels
       ((get-sum-values (list-keys)
-	 "Returns the sum of the values in the list"
+	 "Returns the sum of the values in the list."
 	 (reduce #'
 	  (lambda(v1 v2)
 	    (cond
@@ -293,6 +219,81 @@
 ;; ### Metrics #################################################################################
 
 (defun penetrance (depth total-number-nodes)
-  "Calculates the penetrance"
+  "Calculates the penetrance."
   (format t "Penetrance: ~a~%" (/ depth total-number-nodes)))
+
+
+;; ### Utils ###############################################################################
+
+(defun get-hash-table-keys(tbl)
+  "Returns a list with only the values in the board as strings."
+  (let ((keys '()))
+    (maphash #'(lambda (k v) (declare (ignore v)) (push k keys)) tbl)
+    keys))
+
+
+(defun clone-hash-table (table)
+  "Creates a shallow copy of a hash table."
+  (let ((new-table (make-hash-table
+                    :test (hash-table-test table)
+                    :size (hash-table-size table))))
+    (maphash #'(lambda(key value)
+                 (setf (gethash key new-table) value))
+             table)
+    new-table))
+
+
+(defun get-doubles ()
+  "Return a list with all doubles possible."
+  '("99" "88" "77" "66" "55" "44" "33" "22" "11" "00"))
+
+
+(defun remove-nil(lst)
+  "Removes all the nil values of the list."
+  (let ((values '()))
+    (mapcar #'(lambda(value) (if (not (null value)) (push value values))) lst)
+    (reverse values)))
+
+
+(defun remove-symetric-or-double (current-state value)
+  "Removes doubles or symetrics."
+  (let ((temp (coerce (reverse (coerce value 'list)) 'string)))
+    (cond ((not (equal temp value))
+	   (if (gethash temp positions-map)
+	       (setf (gethash (gethash temp positions-map) current-state) "#SYM")))
+	  (t (let ((doubles
+		     (remove-nil
+		      (mapcar #'
+		       (lambda (key)
+			 (let ((double-coordinate (gethash key positions-map)))
+			   (if (and double-coordinate
+				    (null (gethash double-coordinate current-state)))
+			       double-coordinate))) 
+		       (get-doubles)))))
+	       (if (null (gethash (first doubles) current-state))
+		   (setf (gethash (first doubles) current-state) "#DBL")))))))
+
+
+(defun validate-childs (childs)
+  "Validate if any child is the solution."
+  (cond ((null childs) nil)
+	((>= (second (first childs)) score) (first childs))
+	(t (validate-childs (rest childs)))))
+
+
+(defun init-open-list(&optional heuristic)
+  "Initializes the open list of nodes."
+  (let ((nodes '()))
+    (mapcar #'
+     (lambda (value)
+       "Creates the nodes with the values."
+       (let* ((coordinates (gethash value positions-map))
+	      (init-state (knight-start-position (first coordinates) (second coordinates)))
+	      (child (create-node init-state)))
+	 (cond ((null heuristic) (push child nodes))
+	       (t (let* ((h (funcall heuristic child))
+			 (f (list h 0 h)))
+		    (push (append child (list f)) nodes))))))
+     (remove-nil (first board)))
+    (reverse nodes)))
 

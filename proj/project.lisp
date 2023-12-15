@@ -8,10 +8,12 @@
 ;; ### Inputs ###############################################################################
 
 (defun get-number ()
-  "Receives an input from the user and guarantees that it is a number"
+  "Ask for input until get a number"
+  (format t "Enter a number > ")
   (let ((value (read)))
     (if (numberp value) (return-from get-number value)))
-  (format t "The answer must be a number!~%Please choose a number as an option: ")
+  (sleep 0.01)
+  (format t "Invalid input! Please enter a number.")
   (get-number))
 
 
@@ -68,7 +70,7 @@
 
 ;; ### Output ###############################################################################
 
-(defun write-solution-to-file (node)
+(defun write-solution-to-file (node label)
   "Writes the solution to a file called solution"
   (labels
       ((aux-function (node fd)
@@ -78,11 +80,15 @@
 	       (t (aux-function (get-node-parent node) fd)
 		  (print-current-state node fd)))))
     (with-open-file
-	(file (get-folder-path "solutions.dat")
+	(fd (get-folder-path "solutions.dat")
 	      :direction :output
-	      :if-exists :supersede
+	      :if-exists :append
 	      :if-does-not-exist :create)
-      (aux-function node file))))
+      (format fd "#############################~%")
+      (format fd "### ~a~%" label)
+      (format fd "#############################~%")
+      (aux-function node fd)
+      )))
 
 
 (defun print-current-state(node &optional (fd t))
@@ -103,15 +109,6 @@
 		      (format fd "-- "))
 		     (t (format fd "~a " value)))))
 	   (format fd "~%")))))
-
-	     
-(defun populate-positions-map (table)
-  (dotimes (i 10)
-    (dotimes (j 10)
-      (let* ((value (nth j (nth i table)))
-	     (position (list j i)))
-	(if (not (null value))
-	    (setf (gethash value positions-map) position))))))
 
 
 (defun print-board (board)
@@ -178,19 +175,17 @@
   (setf score (get-problem))
   (setf positions-map (make-hash-table :test 'equal))
   (populate-positions-map board)
-  (format t "-----------------------------~%Objective:~a~%Board~%" score)
-  (print-board board)
   )
 
 
 (defun main ()
   (init)
-  (write-solution-to-file (breadth-first-search))
-  (write-solution-to-file (depth-first-search))
+  (write-solution-to-file (breadth-first-search) "BFS")
+  (write-solution-to-file (depth-first-search) "DFS")
   (write-solution-to-file
    (a* #'percentual-distance
        #'(lambda(n1 n2)
-	   (> (first (get-node-fgh n1)) (first (get-node-fgh n2)))))))
+	   (> (first (get-node-fgh n1)) (first (get-node-fgh n2))))) "A*"))
 
 
 (defun test ()
