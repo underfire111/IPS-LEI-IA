@@ -74,15 +74,17 @@
       ((aux-function (node fd)
 	 "Write at the file descriptor all the states in the solutions."
 	 (cond ((null (get-node-parent node))
+		(format fd "Solution:~%")
 		(print-current-state node fd))
 	       (t (aux-function (get-node-parent node) fd)
 		  (print-current-state node fd)))))
     (with-open-file
 	(file (get-folder-path "solutions.dat")
 	      :direction :output
-	      :if-exists :supersede
+	      :if-exists :append
 	      :if-does-not-exist :create)
-      (aux-function node file))))
+      (aux-function node file)
+      (format file "~%"))))
 
 
 (defun print-current-state(node &optional (fd t))
