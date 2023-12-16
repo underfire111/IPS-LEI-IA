@@ -65,7 +65,7 @@
     ; (print-boards-list boards)
     (let* ((option (get-number))
 	   (temp nil)
-	   (cap (random (- 3245 1545)))) ;; CAP
+	   (cap (random (- 3245 0)))) ;; CAP
       (cond ((not (or (< option 1) (> option (length boards))))
 	     (setf temp (nth (1- option) boards))
 	     (if (equal (first (third temp)) 'random)
@@ -84,7 +84,7 @@
 	(value (nth x (nth y board))))
     (setf (gethash "kn" new-state) (list x y))
     (setf (gethash (list x y) new-state) "#INI")
-    (remove-symetric-or-double new-state value)
+    (remove-symmetric-or-double new-state value)
     new-state))
 
 
@@ -118,7 +118,7 @@
 		(let ((value (nth (first coordinates) (nth (second coordinates) board))))
 		  (setf (gethash "kn" current-state) coordinates)
 		  (setf (gethash coordinates current-state) "#MOV")
-		  (remove-symetric-or-double current-state value)))
+		  (remove-symmetric-or-double current-state value)))
 	       (t (error "Invalid move!")))
 	 current-state)
 	(t (error "Invalid state!"))))
@@ -183,12 +183,12 @@
 
 ;; ### Heuristic ###########################################################################
 
-(defun percentual-distance (node)
+(defun calc-percentual-distance (node)
   "Calculates the percentage that the node has to get to be equal to score."
   (- 100 (* 100 (/ (get-node-score node) score))))
 
 
-(defun enunciation-heuristic (node)
+(defun calc-movements-left (node)
   "Calculates the average points of the board and divides it by the number of points to be at the objective."
   (labels
       ((get-sum-values (list-keys)
@@ -239,6 +239,7 @@
 	   (bisection depth number-of-nodes median max))
           (t (bisection depth number-of-nodes min median)))))
 
+
 ;; ### Utils ###############################################################################
 
 (defun get-hash-table-keys (tbl)
@@ -271,7 +272,7 @@
     (reverse values)))
 
 
-(defun remove-symetric-or-double (current-state value)
+(defun remove-symmetric-or-double (current-state value)
   "Removes doubles or symetrics."
   (let ((temp (coerce (reverse (coerce value 'list)) 'string)))
     (cond ((not (equal temp value))
