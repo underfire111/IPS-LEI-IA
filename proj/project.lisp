@@ -185,7 +185,12 @@
   (write-solution-to-file
    (a* #'percentual-distance
        #'(lambda(n1 n2)
-	   (> (first (get-node-fgh n1)) (first (get-node-fgh n2))))) "A*"))
+	   (> (first (get-node-fgh n1)) (first (get-node-fgh n2))))) "A* (Percentual Distance)")
+  (write-solution-to-file
+     (a* #'enunciation-heuristic
+         #'(lambda (n1 n2)
+     (< (first (get-node-fgh n1)) (first (get-node-fgh n2))))) "A* (Movements Left)")
+  )
 
 
 (defun test ()

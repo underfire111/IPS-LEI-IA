@@ -209,7 +209,7 @@
     (let* ((all-values (get-hash-table-keys positions-map))
 	   (removed-values (get-hash-table-keys (get-node-state node)))
 	   (length-list (- (length all-values) (length removed-values)))
-	   (aux-score (- score (get-node-state node))))
+	   (aux-score (- score (get-node-score node))))
       (if (= 0 aux-score) (setf aux-score 1))
       (if (= 0 length-list) (setf length-list 1))
       (/ (- (get-sum-values all-values) (get-sum-values removed-values))
