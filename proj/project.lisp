@@ -78,7 +78,8 @@
 	 (cond ((null (get-node-parent node))
 		(print-current-state node fd))
 	       (t (aux-function (get-node-parent node) fd)
-		  (print-current-state node fd)))))
+		  (print-current-state node fd)))
+	 (format fd "~%")))
     (with-open-file
 	(fd (get-folder-path "solutions.dat")
 	      :direction :output
@@ -86,7 +87,8 @@
 	      :if-does-not-exist :create)
       (format fd "#############################~%")
       (format fd "### ~a~%" label)
-      (format fd "#############################~%")
+      (format fd "### ~a~%" score)
+      (format fd "#############################~%~%")
       (aux-function node fd)
       )))
 
@@ -95,7 +97,7 @@
   (cond ((null node) (format fd "This problem doesn't have a solution~%"))
 	(t 
 	 (format fd "Score: ~a~%" (get-node-score node))
-	 (format fd "Result Board:~%")
+	 (format fd "Board: ~%")
 	 (dotimes (y 10)
 	   (dotimes (x 10)
 	     (let ((coordinates (list x y))
@@ -180,43 +182,45 @@
 
 (defun main ()
   (init)
-  (write-solution-to-file (breadth-first-search) "BFS")
+  ; (write-solution-to-file (breadth-first-search) "BFS")
   (write-solution-to-file (depth-first-search) "DFS")
-  (write-solution-to-file
-   (a* #'percentual-distance
-       #'(lambda (n1 n2)
-	   (> (first (get-node-fgh n1)) (first (get-node-fgh n2))))) "A* (Percentual Distance)")
-  (write-solution-to-file
-     (a* #'enunciation-heuristic
-         #'(lambda (n1 n2)
-     (< (first (get-node-fgh n1)) (first (get-node-fgh n2))))) "A* (Movements Left)")
+  (write-solution-to-file (a* #'percentual-distance) "A* (Percentual Distance)")
+  ; (write-solution-to-file (a* #'enunciation-heuristic) "A* (Movements Left)")
+  (write-solution-to-file (ida* #'percentual-distance) "IDA* (Percentual Distance)")
+  ; (write-solution-to-file (ida* #'enunciation-heuristic) "IDA* (Movements Left)")
+  (write-solution-to-file (sma* #'percentual-distance 3) "SMA* (Percentual Distance)")
+  ; (write-solution-to-file (sma* #'enunciation-heuristic 10) "SMA* (Movements Left)")
   )
 
 
 (defun test-dfs ()
   (init)
   (format t "-----------------------------~%DFS~%")
-  (print-current-state (depth-first-search))
-  (print ""))
+  (print-current-state (depth-first-search)))
 
 
 (defun test-bfs ()
   (init)
   (format t "-----------------------------~%BFS~%")
-  (print-current-state (breadth-first-search))
-  (print ""))
+  (print-current-state (breadth-first-search)))
 
 
 (defun test-a* ()
   (init)
-  (format t "-----------------------------~%A*~%Heuristic: Percentual Distance~%")
-  (print-current-state
-   (a* #'percentual-distance
-       #'(lambda (n1 n2)
-	   (> (first (get-node-fgh n1)) (first (get-node-fgh n2))))))
-  (format t "Heuristic: Enunciation~%")
-  (print-current-state
-   (a* #'enunciation-heuristic
-       #'(lambda (n1 n2)
-	   (< (first (get-node-fgh n1)) (first (get-node-fgh n2)))))))
+  (format t "-----------------------------~%A*~%")
+  (print-current-state (a* #'percentual-distance))
+  (print-current-state (a* #'enunciation-heuristic)))
 
+
+(defun test-ida* ()
+  (init)
+  (format t "-----------------------------~%IDA*~%")
+  (print-current-state (ida* #'percentual-distance))
+  (print-current-state (ida* #'enunciation-heuristic)))
+
+
+(defun test-sma* ()
+  (init)
+  (format t "-----------------------------~%SMA*~%")
+  (print-current-state (sma* #'percentual-distance 3))
+  (print-current-state (sma* #'enunciation-heuristic 3)))

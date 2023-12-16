@@ -220,7 +220,7 @@
 
 (defun penetrance (depth total-number-nodes)
   "Calculates the penetrance."
-  (format t "Penetrance: ~a~%" (/ depth total-number-nodes)))
+  (/ depth total-number-nodes))
 
 
 (defun branching-factor(B depth number-nodes)
@@ -312,4 +312,9 @@
 		    (push (append child (list f)) nodes))))))
      (remove-nil (first board)))
     (reverse nodes)))
+
+
+(defun sort-open-list-ascending (lst)
+  "Sort the open nodes list by nodes f value"
+  (sort lst #'(lambda (n1 n2) (< (first (get-node-fgh n1)) (first (get-node-fgh n2))))))
 
