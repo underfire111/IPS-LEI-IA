@@ -91,7 +91,7 @@
       )))
 
 
-(defun print-current-state(node &optional (fd t))
+(defun print-current-state (node &optional (fd t))
   (cond ((null node) (format fd "This problem doesn't have a solution~%"))
 	(t 
 	 (format fd "Score: ~a~%" (get-node-score node))
@@ -184,7 +184,7 @@
   (write-solution-to-file (depth-first-search) "DFS")
   (write-solution-to-file
    (a* #'percentual-distance
-       #'(lambda(n1 n2)
+       #'(lambda (n1 n2)
 	   (> (first (get-node-fgh n1)) (first (get-node-fgh n2))))) "A* (Percentual Distance)")
   (write-solution-to-file
      (a* #'enunciation-heuristic
@@ -193,37 +193,26 @@
   )
 
 
-(defun test ()
-  (init)
-  (format t "-----------------------------~%A*~%Heuristic: Percentual Distance~%")
-  (print-current-state
-   (a* #'percentual-distance
-       #'(lambda (n1 n2)
-	   "Auxialiar method to sort the value in the open nodes list of A* algorithm.
-Checks if node1 as a  greater cost than node2"
-	   (> (first (get-node-fgh n1)) (first (get-node-fgh n2)))))))
-
-
-(defun test1 ()
+(defun test-dfs ()
   (init)
   (format t "-----------------------------~%DFS~%")
   (print-current-state (depth-first-search))
   (print ""))
 
 
-(defun test2 ()
+(defun test-bfs ()
   (init)
   (format t "-----------------------------~%BFS~%")
   (print-current-state (breadth-first-search))
   (print ""))
 
 
-(defun test3()
+(defun test-a* ()
   (init)
   (format t "-----------------------------~%A*~%Heuristic: Percentual Distance~%")
   (print-current-state
    (a* #'percentual-distance
-       #'(lambda(n1 n2)
+       #'(lambda (n1 n2)
 	   (> (first (get-node-fgh n1)) (first (get-node-fgh n2))))))
   (format t "Heuristic: Enunciation~%")
   (print-current-state

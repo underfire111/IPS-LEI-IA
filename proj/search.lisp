@@ -45,7 +45,7 @@
 ;; ### A* ##################################################################################
 
 (defun a* (heuristic sort-function)
-  "Performs A* on a graph. The heuristic of the algorithm is the one given by parameter and the sort function given will sort the open nodes's list, so that it's known which node to get first."
+  "Performs A* on a graph."
   (commun-algorithm #'
    (lambda (list-open-nodes childs)
      (sort (append list-open-nodes childs) sort-function))

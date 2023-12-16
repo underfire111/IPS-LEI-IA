@@ -161,7 +161,7 @@
   (fourth node))
 
 
-(defun partenogenese(node &optional heuristic)
+(defun partenogenese (node &optional heuristic)
   (mapcar #'
    (lambda (coordinates)
      "Creates a node moving the knight to the coordinates."
@@ -183,7 +183,7 @@
 
 ;; ### Heuristic ###########################################################################
 
-(defun percentual-distance(node)
+(defun percentual-distance (node)
   "Calculates the percentage that the node has to get to be equal to score."
   (* 100 (/ (get-node-score node) score)))
 
@@ -216,16 +216,32 @@
 	 length-list aux-score))))
 
 
-;; ### Metrics #################################################################################
+;; ### Metrics #############################################################################
 
 (defun penetrance (depth total-number-nodes)
   "Calculates the penetrance."
   (format t "Penetrance: ~a~%" (/ depth total-number-nodes)))
 
 
+(defun branching-factor(B depth number-nodes)
+  "Calculates the branching factor for a given number of nodes in a given depth"
+  (cond ((equal 1 depth) B)
+        (t (+ (expt B depth) (branching-factor B (1- depth) number-nodes)))))
+
+
+(defun bisection (depth number-of-nodes
+		  &optional (min 0) (max number-of-nodes) (tolerance 0.1))
+  "Calculates the bisection of min and max"
+  (let* ((median (/ (+ max min) 2))
+        (result-branching-factor (branching-factor median depth number-of-nodes)))
+    (cond ((< (- number-of-nodes result-branching-factor) tolerance) median)
+          ((< result-branching-factor number-of-nodes)
+	   (bisection depth number-of-nodes median max))
+          (t (bisection depth number-of-nodes min median)))))
+
 ;; ### Utils ###############################################################################
 
-(defun get-hash-table-keys(tbl)
+(defun get-hash-table-keys (tbl)
   "Returns a list with only the values in the board as strings."
   (let ((keys '()))
     (maphash #'(lambda (k v) (declare (ignore v)) (push k keys)) tbl)
@@ -248,7 +264,7 @@
   '("99" "88" "77" "66" "55" "44" "33" "22" "11" "00"))
 
 
-(defun remove-nil(lst)
+(defun remove-nil (lst)
   "Removes all the nil values of the list."
   (let ((values '()))
     (mapcar #'(lambda(value) (if (not (null value)) (push value values))) lst)
@@ -281,7 +297,7 @@
 	(t (validate-childs (rest childs)))))
 
 
-(defun init-open-list(&optional heuristic)
+(defun init-open-list (&optional heuristic)
   "Initializes the open list of nodes."
   (let ((nodes '()))
     (mapcar #'
