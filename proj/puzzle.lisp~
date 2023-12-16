@@ -185,7 +185,7 @@
 
 (defun percentual-distance (node)
   "Calculates the percentage that the node has to get to be equal to score."
-  (- 100 (* 100 (/ (get-node-score node) score))))
+  (* 100 (/ (get-node-score node) score)))
 
 
 (defun enunciation-heuristic (node)

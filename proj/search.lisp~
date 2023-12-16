@@ -60,28 +60,62 @@
   (let* ((counter-nodes-closed 0)
          (list-open-nodes (sort (init-open-list heuristic) #'(lambda(v1 v2) (< (first (get-node-fgh v1)) (first (get-node-fgh v2))))))
          (max-cost (apply #'min (mapcar #'first (mapcar #'get-node-fgh list-open-nodes)))))
-    (let ((is-solution (validate-childs list-open-nodes)))
-      (if (not (null is-solution)) (return-from ida is-solution)))
     (labels ((algorithm()
                (incf counter-nodes-closed)
+               (let 
+               (print-final-result root)
+               (print "Current Min: ")
+               (print min-cost)
+               
                (cond ((null list-open-nodes) nil)
                      ((<= (first (get-node-fgh (first list-open-nodes))) max-cost) 
                       (let* ((node (pop list-open-nodes))
                              (childs (partenogenese node heuristic)))
-                        (let ((is-solution (validate-childs childs)))
-                          (if (not (null is-solution)) (return-from algorithm is-solution)))
-                        (setf list-open-nodes (sort (append list-open-nodes childs) #'(lambda(v1 v2) (< (first (get-node-fgh v1)) (first (get-node-fgh v2))))))                 
-                      (if (not (null list-open-nodes)) (algorithm))))
-                     (t (setf max-cost (first (get-node-fgh (first list-open-nodes))))
+                        (let ((is-solution (validate-childs 
+                        
+
+
+(let ((is-solution (validate-childs childs)))
+	       (if (not (null is-solution)) (return-from commun-algorithm is-solution)))
+	     (setf list-open-nodes (funcall algorithm-funtion list-open-nodes childs))
+	     (if (not (null list-open-nodes)) (recursive-algorithm)))))
+
+(defun ida(heuristic)
+  "Performs IDA on a graph"
+  (let* ((counter-nodes-closed 0)
+         (list-open-nodes (sort (init-open-list heuristic) #'(lambda(v1 v2) (< (fifth v1) (fifth v2)))))
+         (min-cost (apply #'min (mapcar #'fifth list-open-nodes))))
+    (labels ((algorithm(root)
+               (incf counter-nodes-closed)
+               (print-final-result root)
+               (print "Current Min: ")
+               (print min-cost)
+               (cond ((and (not root) (null list-open-nodes)) nil)
+                     ((<= score (get-node-score root)) root)
+                     ((<= (first (get-node-fgh (first list-open-nodes))) min-cost)
+                      (setf list-open-nodes (sort (append list-open-nodes (partenogenese root heuristic)) #'(lambda(v1 v2) (< (fifth v1) (fifth v2)))))
+                      (if (not (null list-open-nodes)) (algorithm (pop list-open-nodes))))
+                     (t (setf min-cost (fifth (first list-open-nodes)))
                         (setf counter-nodes-closed 0)
-                        (setf list-open-nodes (sort (init-open-list heuristic) #'(lambda(v1 v2) (< (first (get-node-fgh v1)) (first (get-node-fgh v2))))))
-                        (algorithm)))))
-      (if (not (null list-open-nodes)) 
-	  (let ((result (algorithm)))
-	    (penetrance
-	     (get-node-depth result)
-	     (+ counter-nodes-closed (length list-open-nodes)))
-	    result)))))
+                        (setf list-open-nodes (sort (init-open-list heuristic) #'(lambda(v1 v2) (< (fifth v1) (fifth v2)))))
+                        (algorithm (pop list-open-nodes))))))
+      
+
+
+    (labels ((algorithm(root)
+               
+               (cond ((and (not root) (null list-open-nodes)) nil)
+                     ((<= score (second root)) root)
+                     ((<= (fifth (first list-open-nodes)) min-cost)
+                      (setf list-open-nodes (sort (append list-open-nodes (partenogenese root heuristic)) #'(lambda(v1 v2) (< (fifth v1) (fifth v2)))))
+                      (if (not (null list-open-nodes)) (algorithm (pop list-open-nodes))))
+                     (t (setf min-cost (fifth (first list-open-nodes)))
+                        (setf counter-nodes-closed 0)
+                        (setf list-open-nodes (sort (init-open-list heuristic) #'(lambda(v1 v2) (< (fifth v1) (fifth v2)))))
+                        (algorithm (pop list-open-nodes))))))
+      (let ((result (algorithm (pop list-open-nodes))))
+    (penetrance (depth result) (+ counter-nodes-closed (length list-open-nodes)))
+    result))))
 
 	
 	     
