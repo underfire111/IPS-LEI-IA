@@ -70,8 +70,8 @@
 
 ;; ### Output ###############################################################################
 
-(defun write-solution-to-file (node label)
-  "Writes the solution to a file called solution"
+(defun write-solution-to-file (node label metrics)
+  "Writes the solution to a file called solution.dat."
   (labels
       ((aux-function (node fd)
 	 "Write at the file descriptor all the states in the solutions."
@@ -82,14 +82,21 @@
 	 (format fd "~%")))
     (with-open-file
 	(fd (get-folder-path "solutions.dat")
-	      :direction :output
-	      :if-exists :append
-	      :if-does-not-exist :create)
-      (format fd "#############################~%")
+	    :direction :output
+	    :if-exists :append
+	    :if-does-not-exist :create)
+      (format fd "################################~%")
+      (format fd "################################~%")
       (format fd "### ~a~%" label)
-      (format fd "### ~a~%" score)
-      (format fd "#############################~%~%")
+      (format fd "### Goal: ~a~%" score)
+      (format fd "################################~%~%")
       (aux-function node fd)
+      (format fd "################################~%")
+      (format fd "### Final score: ~a~%" (get-node-score node))
+      (format fd "### Penetrance: ~a~%" (first metrics))
+      (format fd "### Branching factor: ~a~%" (second metrics))
+      (format fd "################################~%")
+      (format fd "################################~%~%")
       )))
 
 
@@ -97,7 +104,6 @@
   (cond ((null node) (format fd "This problem doesn't have a solution~%"))
 	(t 
 	 (format fd "Score: ~a~%" (get-node-score node))
-	 (format fd "Board: ~%")
 	 (dotimes (y 10)
 	   (dotimes (x 10)
 	     (let ((coordinates (list x y))
@@ -182,45 +188,66 @@
 
 (defun main ()
   (init)
-  ; (write-solution-to-file (breadth-first-search) "BFS")
-  (write-solution-to-file (depth-first-search) "DFS")
-  (write-solution-to-file (a* #'calc-percentual-distance) "A* (Percentual Distance)")
-  ; (write-solution-to-file (a* #'calc-movements-left) "A* (Movements Left)")
-  (write-solution-to-file (ida* #'calc-percentual-distance) "IDA* (Percentual Distance)")
-  ; (write-solution-to-file (ida* #'calc-movements-left) "IDA* (Movements Left)")
-  (write-solution-to-file (sma* #'calc-percentual-distance 2) "SMA* (Percentual Distance)")
-  ; (write-solution-to-file (sma* #'calc-movements-left 10) "SMA* (Movements Left)")
+  (test-dfs)
+
+  (test-bfs)
+
+  (test-a* #'calc-movements-left "A* (Movements left)")
+  (test-a* #'calc-percentual-distance "A* (Percentual distance)")
+  (test-a* #'calc-average-progression "A* (Average progression)")
+
+  (test-ida* #'calc-movements-left "IDA* (Movements left)")
+  (test-ida* #'calc-percentual-distance "IDA* (Percentual distance)")
+  (test-ida* #'calc-average-progression "IDA* (Average progression)")
+
+  (test-sma* #'calc-movements-left "SMA* (Movements left)")
+  (test-sma* #'calc-percentual-distance "SMA* (Percentual distance)")
+  (test-sma* #'calc-average-progression "SMA* (Average progression)")
+
   )
 
 
 (defun test-dfs ()
-  (init)
-  (format t "-----------------------------~%DFS~%")
-  (print-current-state (depth-first-search)))
+  (let* ((temp (depth-first-search))
+	 (a (penetrance (get-node-depth (first temp)) (second temp)))
+	 (b (bisection (get-node-depth (first temp)) (second temp))))
+    (write-solution-to-file (first temp) "DFS" (list a b)))
+  )
 
 
 (defun test-bfs ()
-  (init)
-  (format t "-----------------------------~%BFS~%")
-  (print-current-state (breadth-first-search)))
+  (let* ((temp (breadth-first-search))
+	 (a (penetrance (get-node-depth (first temp)) (second temp)))
+	 (b (bisection (get-node-depth (first temp)) (second temp))))
+    (write-solution-to-file (first temp) "BFS" (list a b)))
+  )
 
 
-(defun test-a* ()
-  (init)
-  (format t "-----------------------------~%A*~%")
-  (print-current-state (a* #'calc-percentual-distance))
-  (print-current-state (a* #'calc-movements-left)))
+(defun test-a* (&optional
+		  (heuristic #'calc-percentual-distance)
+		  (label "A* (Percentual distance)"))
+  (let* ((temp (a* heuristic))
+	 (a (penetrance (get-node-depth (first temp)) (second temp)))
+	 (b (bisection (get-node-depth (first temp)) (second temp))))
+    (write-solution-to-file (first temp) label (list a b)))
+  )
 
 
-(defun test-ida* ()
-  (init)
-  (format t "-----------------------------~%IDA*~%")
-  (print-current-state (ida* #'calc-percentual-distance))
-  (print-current-state (ida* #'calc-movements-left)))
+(defun test-ida* (&optional
+		    (heuristic #'calc-percentual-distance)
+		    (label "IDA* (Percentual distance)"))
+  (let* ((temp (ida* heuristic))
+	 (a (penetrance (get-node-depth (first temp)) (second temp)))
+	 (b (bisection (get-node-depth (first temp)) (second temp))))
+    (write-solution-to-file (first temp) label (list a b)))
+  )
 
 
-(defun test-sma* ()
-  (init)
-  (format t "-----------------------------~%SMA*~%")
-  (print-current-state (sma* #'calc-percentual-distance 3))
-  (print-current-state (sma* #'calc-movements-left 3)))
+(defun test-sma* (&optional
+		    (heuristic #'calc-percentual-distance)
+		    (label "SMA* (Percentual distance)"))
+  (let* ((temp (sma* heuristic))
+	 (a (penetrance (get-node-depth (first temp)) (second temp)))
+	 (b (bisection (get-node-depth (first temp)) (second temp))))
+    (write-solution-to-file (first temp) label (list a b)))
+  )
