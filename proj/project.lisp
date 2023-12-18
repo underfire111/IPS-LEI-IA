@@ -101,6 +101,7 @@
 
 
 (defun print-current-state (node &optional (fd t))
+  "Prints the board at its current state."
   (cond ((null node) (format fd "This problem doesn't have a solution~%"))
 	(t 
 	 (format fd "Score: ~a~%" (get-node-score node))
@@ -188,22 +189,31 @@
 
 (defun main ()
   (init)
+  
   (test-dfs)
 
   (test-bfs)
 
-  (test-a* #'calc-movements-left "A* (Movements left)")
-  (test-a* #'calc-percentual-distance "A* (Percentual distance)")
-  (test-a* #'calc-average-progression "A* (Average progression)")
+  (test-a-star
+   #'calc-movements-left "A* (Movements left)")
+  (test-a-star
+   #'calc-percentual-distance "A* (Percentual distance)")
+  (test-a-star
+   #'calc-average-progression "A* (Average progression)")
 
-  (test-ida* #'calc-movements-left "IDA* (Movements left)")
-  (test-ida* #'calc-percentual-distance "IDA* (Percentual distance)")
-  (test-ida* #'calc-average-progression "IDA* (Average progression)")
+  (test-iterative-depending-a-star
+   #'calc-movements-left "IDA* (Movements left)")
+  (test-iterative-depending-a-star
+   #'calc-percentual-distance "IDA* (Percentual distance)")
+  (test-iterative-depending-a-star
+   #'calc-average-progression "IDA* (Average progression)")
 
-  (test-sma* #'calc-movements-left "SMA* (Movements left)")
-  (test-sma* #'calc-percentual-distance "SMA* (Percentual distance)")
-  (test-sma* #'calc-average-progression "SMA* (Average progression)")
-
+  (test-simplified-memory-bounded-a-star
+   #'calc-movements-left "SMA* (Movements left)")
+  (test-simplified-memory-bounded-a-star
+   #'calc-percentual-distance "SMA* (Percentual distance)")
+  (test-simplified-memory-bounded-a-star
+   #'calc-average-progression "SMA* (Average progression)")
   )
 
 
@@ -223,30 +233,30 @@
   )
 
 
-(defun test-a* (&optional
+(defun test-a-star (&optional
 		  (heuristic #'calc-percentual-distance)
 		  (label "A* (Percentual distance)"))
-  (let* ((temp (a* heuristic))
+  (let* ((temp (a-star heuristic))
 	 (a (penetrance (get-node-depth (first temp)) (second temp)))
 	 (b (bisection (get-node-depth (first temp)) (second temp))))
     (write-solution-to-file (first temp) label (list a b)))
   )
 
 
-(defun test-ida* (&optional
+(defun test-iterative-depending-a-star (&optional
 		    (heuristic #'calc-percentual-distance)
 		    (label "IDA* (Percentual distance)"))
-  (let* ((temp (ida* heuristic))
+  (let* ((temp (iterative-depending-a-star heuristic))
 	 (a (penetrance (get-node-depth (first temp)) (second temp)))
 	 (b (bisection (get-node-depth (first temp)) (second temp))))
     (write-solution-to-file (first temp) label (list a b)))
   )
 
 
-(defun test-sma* (&optional
+(defun test-simplified-memory-bounded-a-star (&optional
 		    (heuristic #'calc-percentual-distance)
 		    (label "SMA* (Percentual distance)"))
-  (let* ((temp (sma* heuristic))
+  (let* ((temp (simplified-memory-bounded-a-star heuristic))
 	 (a (penetrance (get-node-depth (first temp)) (second temp)))
 	 (b (bisection (get-node-depth (first temp)) (second temp))))
     (write-solution-to-file (first temp) label (list a b)))

@@ -132,6 +132,7 @@
 
 
 (defun create-node (state &optional parent)
+  "Creates a new node."
   (let* ((coordinates (gethash "kn" state))
 	 (score (parse-integer (nth (first coordinates) (nth (second coordinates) board)))))
     (list state
@@ -161,30 +162,33 @@
   (fourth node))
 
 
-(defun partenogenese (node &optional heuristic)
-  (mapcar #'
-   (lambda (coordinates)
-     "Creates a node moving the knight to the coordinates."
-     (let ((child
-	     (create-node
-	      (knight-move-to
-	       (clone-hash-table
-		(get-node-state node))
-	       coordinates)
-	      node)))
-       (cond ((not (null heuristic))
-	      (let* ((h (funcall heuristic child))
-		     (g (1+ (second (get-node-fgh node))))
-		     (fgh (list (+ g h) g h)))
-		(append child (list fgh))))
-	     (t child))))
-   (remove-nil (knight-can-move-to (get-node-state node)))))
+(defun partenogenese (node heuristic)
+  "Create the node successors."
+  (if (equal node 'root)
+      (init-list-opened-nodes heuristic)
+      (mapcar #'
+       (lambda (coordinates)
+	 "Creates a node moving the knight to the coordinates."
+	 (let ((child
+		 (create-node
+		  (knight-move-to
+		   (clone-hash-table
+		    (get-node-state node))
+		   coordinates)
+		  node)))
+	   (cond ((not (null heuristic))
+		  (let* ((h (funcall heuristic child))
+			 (g (1+ (second (get-node-fgh node))))
+			 (fgh (list (+ g h) g h)))
+		    (append child (list fgh))))
+		 (t child))))
+       (remove-nil (knight-can-move-to (get-node-state node))))))
 
 
 ;; ### Heuristic ###########################################################################
 
 (defun calc-percentual-distance (node)
-  "Calculates the percentual distance to the goal"
+  "Calculates the percentual distance to the goal."
   (- 100 (* 100 (/ (get-node-score node) score))))
 
 
@@ -217,8 +221,8 @@
 	   (aux-score (- score (get-node-score node))))
       (if (= 0 aux-score) (setf aux-score 1))
       (if (= 0 length-list) (setf length-list 1))
-      (/ (- (get-sum-values all-values) (get-sum-values removed-values))
-	 length-list aux-score))))
+      (/ (* aux-score length-list)
+	 (- (get-sum-values all-values) (get-sum-values removed-values))))))
 
 
 ;; ### Metrics #############################################################################
@@ -233,7 +237,7 @@
   "Calculates the bisection of min and max."
   (labels
       ((branching-factor (mean depth)
-	 "Calculates the branching factor for a given number of nodes in a given depth"
+	 "Calculates the branching factor for a given number of nodes in a given depth."
 	 (cond ((equal 1 depth) mean)
 	       (t (+ (expt mean depth) (branching-factor mean (1- depth)))))))
     (let* ((median (/ (+ max min) 2))
@@ -320,6 +324,6 @@
 
 
 (defun sort-list-opened-nodes-ascending (lst)
-  "Sort the open nodes list by nodes f value"
+  "Sort the open nodes list by nodes f value."
   (sort lst #'(lambda (n1 n2) (< (first (get-node-fgh n1)) (first (get-node-fgh n2))))))
 

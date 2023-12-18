@@ -1,7 +1,7 @@
 ;; Generic Search Algorithm
 
 (defun commun-algorithm (ft-fix-open-list ft-init-list-opened-nodes &optional heuristic)
-  "Common algorithm between BFS, DFS and A*"
+  "Common algorithm between BFS, DFS and A*."
   (let ((counter-closed-nodes 0)
 	(list-opened-nodes (funcall ft-init-list-opened-nodes)))
     (let ((is-solution (validate-childs list-opened-nodes)))
@@ -42,7 +42,7 @@
 
 ;; ### A* ##################################################################################
 
-(defun a* (heuristic)
+(defun a-star (heuristic)
   "Performs A* on a graph."
   (commun-algorithm
    #'(lambda (list-opened-nodes childs)
@@ -52,6 +52,9 @@
    heuristic))
 
 ;; ### IDA* ################################################################################
+
+
+#|
 
 (defun ida* (heuristic)
   "Performs IDA on a graph."
@@ -85,11 +88,49 @@
       (if list-opened-nodes
 	  (list (recursive-algorithm)
 		(+ 1 counter-closed-nodes (length list-opened-nodes)))))))
+|#
 
+(defun iterative-depending-a-star (heuristic)
+  "Performs IDA on a graph."
+  (let ((bound most-positive-fixnum)
+	(list-opened-nodes '(root))
+	(counter-closed-nodes 0))
+    (labels
+	((recursive-algorithm ()
+	   (let ((node (first list-opened-nodes))
+		 (min most-negative-fixnum))
+	     (if (not (equal node 'root))
+		 (cond ((> (first (get-node-fgh node)) bound)
+			(return-from recursive-algorithm (first (get-node-fgh node))))
+		       ((>= (get-node-score node) score)
+			(return-from recursive-algorithm 'found)))
+		 (pop list-opened-nodes))
+	     (let* ((successors
+		      (sort-list-opened-nodes-ascending
+		       (partenogenese node heuristic))))
+	       (setf counter-closed-nodes (+ counter-closed-nodes (length successors)))
+	       (loop for node in successors
+		     do (cond
+			  ((not (member node list-opened-nodes))
+			   (push node list-opened-nodes)
+			   (let ((temp (recursive-algorithm)))
+			     (cond ((equal temp 'found)
+				    (return-from recursive-algorithm 'found))
+				   ((< temp min) (setf min temp)))
+			     (pop list-opened-nodes)))))
+	       (return-from recursive-algorithm min)))))
+      (loop
+	(let ((temp (recursive-algorithm)))
+	  (unless (not (equal temp 'found))
+	    (return (list (first list-opened-nodes) (1+ counter-closed-nodes))))
+	  (unless (not (= temp most-negative-fixnum))
+	    (return (list nil (1+ counter-closed-nodes))))
+	  (setf bound temp))))))
+  
 ;; ### SMA* ################################################################################
 
 
-(defun sma* (heuristic &optional (limit 10))
+(defun simplified-memory-bounded-a-star (heuristic &optional (limit 10))
   "Performs SMA* on a graph."
   (commun-algorithm
    #'(lambda (list-opened-nodes childs)
