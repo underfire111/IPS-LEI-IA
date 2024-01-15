@@ -132,6 +132,7 @@
 
 
 (defun create-node (state &optional parent)
+  "Creates a new node."
   (let* ((coordinates (gethash "kn" state))
 	 (score (parse-integer (nth (first coordinates) (nth (second coordinates) board)))))
     (list state
@@ -161,35 +162,43 @@
   (fourth node))
 
 
-(defun partenogenese (node &optional heuristic)
-  (mapcar #'
-   (lambda (coordinates)
-     "Creates a node moving the knight to the coordinates."
-     (let ((child
-	     (create-node
-	      (knight-move-to
-	       (clone-hash-table
-		(get-node-state node))
-	       coordinates)
-	      node)))
-       (cond ((not (null heuristic))
-	      (let* ((h (funcall heuristic child))
-		     (g (1+ (second (get-node-fgh node))))
-		     (fgh (list (+ g h) g h)))
-		(append child (list fgh))))
-	     (t child))))
-   (remove-nil (knight-can-move-to (get-node-state node)))))
+(defun partenogenese (node heuristic)
+  "Create the node successors."
+  (if (equal node 'root)
+      (init-list-opened-nodes heuristic)
+      (mapcar #'
+       (lambda (coordinates)
+	 "Creates a node moving the knight to the coordinates."
+	 (let ((child
+		 (create-node
+		  (knight-move-to
+		   (clone-hash-table
+		    (get-node-state node))
+		   coordinates)
+		  node)))
+	   (cond ((not (null heuristic))
+		  (let* ((h (funcall heuristic child))
+			 (g (1+ (second (get-node-fgh node))))
+			 (fgh (list (+ g h) g h)))
+		    (append child (list fgh))))
+		 (t child))))
+       (remove-nil (knight-can-move-to (get-node-state node))))))
 
 
 ;; ### Heuristic ###########################################################################
 
 (defun calc-percentual-distance (node)
-  "Calculates the percentage that the node has to get to be equal to score."
+  "Calculates the percentual distance to the goal."
   (- 100 (* 100 (/ (get-node-score node) score))))
 
 
+(defun calc-average-progression (node)
+  "Calculates the average progression per movement."
+  (* (/ (get-node-score node) (1+ (get-node-depth node))) -1))
+
+
 (defun calc-movements-left (node)
-  "Calculates the average points of the board and divides it by the number of points to be at the objective."
+  "Calculates how many moves are needed to reach the goal."
   (labels
       ((get-sum-values (list-keys)
 	 "Returns the sum of the values in the list."
@@ -212,8 +221,8 @@
 	   (aux-score (- score (get-node-score node))))
       (if (= 0 aux-score) (setf aux-score 1))
       (if (= 0 length-list) (setf length-list 1))
-      (/ (- (get-sum-values all-values) (get-sum-values removed-values))
-	 length-list aux-score))))
+      (/ (* aux-score length-list)
+	 (- (get-sum-values all-values) (get-sum-values removed-values))))))
 
 
 ;; ### Metrics #############################################################################
@@ -223,21 +232,20 @@
   (/ depth total-number-nodes))
 
 
-(defun branching-factor(B depth number-nodes)
-  "Calculates the branching factor for a given number of nodes in a given depth"
-  (cond ((equal 1 depth) B)
-        (t (+ (expt B depth) (branching-factor B (1- depth) number-nodes)))))
-
-
 (defun bisection (depth number-of-nodes
 		  &optional (min 0) (max number-of-nodes) (tolerance 0.1))
-  "Calculates the bisection of min and max"
-  (let* ((median (/ (+ max min) 2))
-        (result-branching-factor (branching-factor median depth number-of-nodes)))
-    (cond ((< (- number-of-nodes result-branching-factor) tolerance) median)
-          ((< result-branching-factor number-of-nodes)
-	   (bisection depth number-of-nodes median max))
-          (t (bisection depth number-of-nodes min median)))))
+  "Calculates the bisection of min and max."
+  (labels
+      ((branching-factor (mean depth)
+	 "Calculates the branching factor for a given number of nodes in a given depth."
+	 (cond ((equal 1 depth) mean)
+	       (t (+ (expt mean depth) (branching-factor mean (1- depth)))))))
+    (let* ((median (/ (+ max min) 2))
+	   (result-branching-factor (branching-factor median depth)))
+      (cond ((< (- number-of-nodes result-branching-factor) tolerance) median)
+	    ((< result-branching-factor number-of-nodes)
+	     (bisection depth number-of-nodes median max))
+	    (t (bisection depth number-of-nodes min median))))))
 
 
 ;; ### Utils ###############################################################################
@@ -298,7 +306,7 @@
 	(t (validate-childs (rest childs)))))
 
 
-(defun init-open-list (&optional heuristic)
+(defun init-list-opened-nodes (&optional heuristic)
   "Initializes the open list of nodes."
   (let ((nodes '()))
     (mapcar #'
@@ -315,7 +323,7 @@
     (reverse nodes)))
 
 
-(defun sort-open-list-ascending (lst)
-  "Sort the open nodes list by nodes f value"
+(defun sort-list-opened-nodes-ascending (lst)
+  "Sort the open nodes list by nodes f value."
   (sort lst #'(lambda (n1 n2) (< (first (get-node-fgh n1)) (first (get-node-fgh n2))))))
 
