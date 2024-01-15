@@ -1,0 +1,49 @@
+(defparameter board nil)
+(defparameter score nil)
+(defparameter position-map nil)
+
+;; ### Inputs ###############################################################################
+
+(defun get-number()
+  "Ask for input until get a number"
+  (format t "Enter a number > ")
+  (let ((value (read)))
+    (if (numberp value) (return-from get-number value)))
+  (sleep 0.01)
+  (format t "Invalid input! Please enter a number.")
+  (get-number))
+
+;; ### Output ###############################################################################
+
+(defun print-board (board)
+  "Prints the board"
+  (labels
+      ((print-row(line)
+	 "Prints a string"
+	 (cond ((null line) nil)
+	       ((null (first line))
+		(format t "-- ")
+		(print-row (rest line)))
+	       (t (format t "~a " (first line))
+		  (print-row (rest line))))))
+    (cond ((null board) nil)
+	  (t (print-row (first board))
+	     (format t "~%")
+	     (print-board (rest board))))))
+
+(defun print-hash-table (tbl)
+  "Print a map"
+  (maphash #'(lambda (key value)
+	       (format t "Key: ~a, Position: ~a~%" key value))
+	   tbl))
+
+
+(defun print-hash-table-sorted (tbl)
+  "Print a map with its keys sorted"
+  (let ((keys (get-hash-table-keys tbl)))
+    (dolist (key (sort keys 'string<))
+      (format t "Key: ~a, Position: ~a~%" key (gethash key tbl)))))
+
+(defun jogar(state, time)
+  "Returns the board with the next movement done"
+)

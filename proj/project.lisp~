@@ -224,10 +224,3 @@
   (format t "-----------------------------~%SMA*~%")
   (print-current-state (sma* #'calc-percentual-distance 3))
   (print-current-state (sma* #'calc-movements-left 3)))
-
-(defun test-rbfs ()
-  (init)
-  (format t "-----------------------------~%RBFS~%")
-  (let ((initial-open-nodes (sort-open-list-ascending (init-open-list #'calc-percentual-distance))))
-    (print-current-state (rbfs (rest initial-open-nodes) (first initial-open-nodes) #'calc-percentual-distance))
-    (print-current-state (rbfs (rest initial-open-nodes) (first initial-open-nodes) #'calc-movements-left))))

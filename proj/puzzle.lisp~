@@ -141,7 +141,7 @@
 
 (defun get-node-depth (node)
   (cond ((not (null (get-node-fgh node))) (second (get-node-fgh node)))
-	((null (get-node-parent node)) 1)
+	((null (get-node-parent node)) 0)
 	(t (1+ (get-node-depth (get-node-parent node))))))
 
 
@@ -309,7 +309,7 @@
 	      (child (create-node init-state)))
 	 (cond ((null heuristic) (push child nodes))
 	       (t (let* ((h (funcall heuristic child))
-			 (f (list (1+ h) 1 h)))
+			 (f (list h 0 h)))
 		    (push (append child (list f)) nodes))))))
      (remove-nil (first board)))
     (reverse nodes)))

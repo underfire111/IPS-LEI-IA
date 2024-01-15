@@ -12,14 +12,14 @@
 	   (let* ((node (pop list-open-nodes))
 		  (childs (partenogenese node heuristic)))
 	     (let ((is-solution (validate-childs childs)))
-	       (if (not (null is-solution)) (return-from recursive-algorithm is-solution)))
+	       (if (not (null is-solution)) (return-from commun-algorithm is-solution)))
 	     (setf list-open-nodes (funcall ft-fix-open-list list-open-nodes childs)))
 	     (if (not (null list-open-nodes)) (recursive-algorithm))))
       (if (not (null list-open-nodes)) 
 	  (let ((result (recursive-algorithm)))
-	    (print (penetrance
+	    (penetrance
 	     (get-node-depth result)
-	     (+ 1 counter-nodes-closed (length list-open-nodes))))
+	     (+ counter-nodes-closed (length list-open-nodes)))
 	    result)))))
 
 
@@ -60,8 +60,7 @@
   (let*
       ((counter-nodes-closed 0)
        (list-open-nodes (sort-open-list-ascending (init-open-list heuristic)))
-       (max-cost (apply #'min (mapcar #'first (mapcar #'get-node-fgh list-open-nodes))))
-       (c 0))
+       (max-cost (apply #'min (mapcar #'first (mapcar #'get-node-fgh list-open-nodes)))))
     (let ((is-solution (validate-childs list-open-nodes)))
       (if is-solution (return-from ida* is-solution)))
     (labels
@@ -78,8 +77,6 @@
 		      (sort-open-list-ascending (append list-open-nodes childs))))
 		    (if (not (null list-open-nodes)) (algorithm)))
 	     (t
-              (incf c)
-              (print c)
 	      (setf max-cost (first (get-node-fgh (first list-open-nodes))))
 	      (setf counter-nodes-closed 0)
 	      (setf list-open-nodes
@@ -125,14 +122,14 @@
 
 (defun rbfs(list-open-nodes node heuristic)
   (print-current-state node)
+  (print 
   "Recursive Best-First Search algorithm."
   (cond ((>= (get-node-score node) score) node)
         ((and (null list-open-nodes) (null node)) nil)
-        (t (let* ((children (partenogenese node heuristic))
-                  (new-lst-open (sort-open-list-ascending (append (rest list-open-nodes) children)))
-                  (next-node (first new-lst-open)))
-             (print list-open-nodes)
-             (print children)
+        (t 
+         (let* ((children (partenogenese node heuristic))
+                (new-lst-open (sort-open-list-ascending (append (rest list-open-nodes) children)))
+                (next-node (first new-lst-open)))
            (cond ((and next-node (element-in-list-p next-node children))
                   (let ((solution (rbfs new-lst-open next-node heuristic)))
                     (cond ((>= (get-node-score solution) score) solution)

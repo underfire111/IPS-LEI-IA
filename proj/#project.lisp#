@@ -1,4 +1,4 @@
-;; ### Globals ##############################################################################
+ ;; ### Globals ##############################################################################
 
 (defparameter board nil)
 (defparameter score nil)
@@ -21,7 +21,7 @@
 
 (defun get-folder-path (file)
   "Returns the path to theh files"
-  (concatenate 'string "~/Desktop/IA/proj/" file))
+  (concatenate 'string "~/Desktop/IA/proj/" file)) 
 
 
 (load (get-folder-path "puzzle.lisp"))
