@@ -37,8 +37,8 @@
                                    (cond ((or (null value) (and curr-state )) (format t "-- "))
                                          ((and curr-state)
                                           (cond ((gethash coordinates curr-state) (format t "-- "))
-                                                ((equal coordinates (gethash "p1" curr-state)) (format t "-1 "))
-                                                ((equal coordinates (gethash "p2" curr-state)) (format t "-2 "))
+                                                ((equal coordinates (gethash "p1" curr-state)) (format t "P1 "))
+                                                ((equal coordinates (gethash "p2" curr-state)) (format t "P2 "))
                                                 (t (format t "~a " value))))
                                          (t (format t "~a " value)))))
                                line)
@@ -61,14 +61,18 @@
 ;; ### Main ###############################################################################
 
 (defun main()
-  (setf score 99)
   (setf board (mount-board (shuffle-positions (list-positions))))
   (setf positions-map (make-hash-table :test 'equal))
   (populate-positions-map board)
-  (format t "Board:~%") ;; Print the Board
+  (format t "Board:~%")
   (print-board board)
+  (format t "Do you want a score in the game? (Yes or No) ")
+  (let ((answer (read)))
+    (cond ((or (equal answer 'yes) (equal answer 'Yes))
+           (format t "How much? ")
+           (setf score (get-number)))
+          (t (setf score 4000)))) ;; 4000 impossible value to obtain due to the rule of the removed values. 
   (format t "--------------------------~%")
-  (partenogenese 'root "p1")
   (print "Success"))
 
 (defun jogar(state time)
