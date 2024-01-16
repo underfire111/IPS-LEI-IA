@@ -57,6 +57,60 @@
 	(if (not (null value))
 	    (setf (gethash value positions-map) position))))))
 
+;; ### Node ################################################################################
+
+;; node e uma lista com:
+;; state score parent fgh
+;;   1     2     3     4
+
+
+(defun create-node (state player &optional parent)
+  "Creates a new node."
+  (let* ((coordinates (gethash player state))
+	 (score (parse-integer (nth (first coordinates) (nth (second coordinates) board)))))
+    (list state
+	  (if (not (null parent)) (+ score (get-node-score parent)) score)
+	  (if (not (null parent)) parent nil))))
+
+
+(defun get-node-depth (node)
+  (cond ((not (null (get-node-fgh node))) (second (get-node-fgh node)))
+	((null (get-node-parent node)) 1)
+	(t (1+ (get-node-depth (get-node-parent node))))))
+
+
+(defun get-node-state (node)
+  (first node))
+
+
+(defun get-node-score (node)
+  (second node))
+
+
+(defun get-node-parent (node)
+  (third node))
+
+
+(defun get-node-fgh (node)
+  (fourth node))
+
+
+(defun partenogenese (node player)
+  "Create the node successors."
+  (if (equal node 'root)
+      (init-list-opened-nodes player)
+      (mapcar #'
+       (lambda (coordinates)
+	 "Creates a node moving the knight to the coordinates."
+	 (let ((child
+		 (create-node
+		  (knight-move-to
+		   (clone-hash-table
+		    (get-node-state node))
+		   coordinates)
+		  node)))))
+       (remove-nil (knight-can-move-to (get-node-state node))))))
+
 ;; ### Utils ###############################################################################
 
 (defun get-hash-table-keys (tbl)
