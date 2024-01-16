@@ -108,40 +108,34 @@
 ;; ### Node ################################################################################
 
 ;; node e uma lista com:
-;; state score parent
-;;   1     2     3   
+;; state score-player1 score-player2 parent
+;;   1        2             3           4
 
-
-(defun create-node (state player &optional parent)
+(defun create-node (state player &optional node)
   "Creates a new node."
   (let* ((coordinates (gethash player state))
 	 (score (parse-integer (nth (first coordinates) (nth (second coordinates) board)))))
     (list state
-	  (if (not (null parent)) (+ score (get-node-score parent)) score)
-	  (if (not (null parent)) parent nil))))
-
-
-(defun get-node-depth (node)
-  (cond ((not (null (get-node-fgh node))) (second (get-node-fgh node)))
-	((null (get-node-parent node)) 1)
-	(t (1+ (get-node-depth (get-node-parent node))))))
+          (cond ((equal player 'player1)
+                 (if (not (null node)) (+ score (get-node-score node)) score)
+                 (if (not (null node)) node nil))
+                (t
+                 (if (not (null node)) (+ score (second (get-node-score node))) score)
+                 (if (not (null node)) node nil))))))
 
 
 (defun get-node-state (node)
   (first node))
 
 
-(defun get-node-score (node)
+(defun get-node-score-player1 (node)
   (second node))
 
-
-(defun get-node-parent (node)
+(defun get-node-score-player2 (node)
   (third node))
 
-
-(defun get-node-fgh (node)
+(defun get-node-parent (node)
   (fourth node))
-
 
 (defun partenogenese (node player)
   "Create the node successors."

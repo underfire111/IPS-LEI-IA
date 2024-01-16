@@ -57,11 +57,59 @@
 	(if (not (null value))
 	    (setf (gethash value positions-map) position))))))
 
+;; ### Knight ##############################################################################
+
+(defun knight-start-position (x y player)
+  "Places the knight at the board"
+  (let ((new-state (make-hash-table :test 'equal))
+	(value (nth x (nth y board))))
+    (setf (gethash player new-state) (list x y))
+    (setf (gethash (list x y) new-state) "#INI")
+    (remove-symmetric-or-double new-state value)
+    new-state))
+
+
+(defun knight-can-move-to (current-state player)
+  "Check for all possible moves."
+  (cond ((not (null (gethash player current-state)))
+	 (let ((x (first (gethash player current-state)))
+	       (y (second (gethash player current-state)))
+	       (moves '()))
+	   (dolist (offset '((1 . 2) (2 . 1) (2 . -1) (1 . -2)
+			     (-1 . -2) (-2 . -1) (-2 . 1) (-1 . 2)))
+	     (let ((new-x (+ x (car offset))) (new-y (+ y (cdr offset))))
+	       (cond ((and (>= new-x 0) (<= new-x 9) (>= new-y 0) (<= new-y 9)
+			   (not (gethash (list new-x new-y) current-state))
+			   (nth new-x (nth new-y board)))
+		      (push (list new-x new-y) moves))
+		     (t (push nil moves)))))
+	   (reverse moves)))))
+
+
+(defun knight-can-move (current-state player)
+  "Check if the knight still have any move available."
+  (let ((next (knight-can-move-to current-state player)))
+    (not (notany #'identity next))))
+
+
+(defun knight-move-to (current-state coordinates player)
+  "If possible, move the knight to the given location"
+  (cond ((not (null current-state))
+	 (cond (coordinates
+		(let ((value (nth (first coordinates) (nth (second coordinates) board))))
+		  (setf (gethash player current-state) coordinates)
+		  (setf (gethash coordinates current-state) "#MOV")
+		  (remove-symmetric-or-double current-state value)))
+	       (t (error "Invalid move!")))
+	 current-state)
+	(t (error "Invalid state!"))))
+
+
 ;; ### Node ################################################################################
 
 ;; node e uma lista com:
-;; state score parent fgh
-;;   1     2     3     4
+;; state score parent
+;;   1     2     3   
 
 
 (defun create-node (state player &optional parent)
@@ -159,3 +207,19 @@
 		       (get-doubles)))))
 	       (if (null (gethash (first doubles) current-state))
 		   (setf (gethash (first doubles) current-state) "#DBL")))))))
+
+(defun init-list-opened-nodes(player)
+  "Initializes the open list of nodes for the correspondent player"
+  (let ((nodes '()))
+    (mapcar #'(lambda (value)
+                "Creates the nodes with the values"
+                (let* ((coordinates (gethash value positions-map))
+                       (init-state (knight-start-position (first coordinates) (second coordinates) player))
+                       (child (create-node init-state player)))
+                  (push child nodes)))
+            (remove-nil (if (equal player 'player1) (first board) (first (reverse board)))))
+    (reverse nodes)))
+
+(defun sort-list-opened-nodes-ascending (lst)
+  "Sort the open nodes list by nodes f value."
+  (sort lst #'(lambda (n1 n2) (< (first (get-node-score n1)) (first (get-node-score n2))))))
