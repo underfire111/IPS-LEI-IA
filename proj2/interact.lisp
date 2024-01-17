@@ -72,7 +72,7 @@
            (format t "How much? ")
            (setf score (get-number)))
           (t (setf score 4000)))) ;; 4000 impossible value to obtain due to the rule of the removed values. 
-  (format t "--------------------------~%")
+  (let ((node (initialize-game))))
   (print "Success"))
 
 (defun jogar(state time)

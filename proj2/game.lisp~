@@ -59,14 +59,17 @@
 
 ;; ### Knight ##############################################################################
 
-(defun knight-start-position (x y player)
+(defun knight-start-position (player1-coordinates player2-coordinates)
   "Places the knight at the board"
   (let ((new-state (make-hash-table :test 'equal))
-	(value (nth x (nth y board))))
-    (setf (gethash player new-state) (list x y))
-    (setf (gethash (list x y) new-state) "#INI")
-    (remove-symmetric-or-double new-state value)
+    (setf (gethash "player1" new-state) player1-coordinates)
+    (setf (gethash "player2" new-state) player2-coordinates)
+    (setf (gethash player1-coordinates new-state) "#INI P1")
+    (setf (gethash player2-coordinates new-state) "#INI P2")
+    (remove-symmetric-or-double new-state (nth (first player1-coordinates) (nth (second player1-coordinates) board)))
+    (remove-symmetric-or-double new-state (nth (first player2-coordinates) (nth (second player2-coordinates) board)))
     new-state))
+
 
 
 (defun knight-can-move-to (current-state player)
@@ -108,40 +111,31 @@
 ;; ### Node ################################################################################
 
 ;; node e uma lista com:
-;; state score parent
-;;   1     2     3   
+;; state score-player1 score-player2 parent
+;;   1        2             3           4
 
-
-(defun create-node (state player &optional parent)
+(defun create-node (state &optional parent)
   "Creates a new node."
-  (let* ((coordinates (gethash player state))
-	 (score (parse-integer (nth (first coordinates) (nth (second coordinates) board)))))
+  (let ((coordinates-player1 (gethash "player1" state))
+        (coordinates-player2 (gethash "player2" state)))
     (list state
-	  (if (not (null parent)) (+ score (get-node-score parent)) score)
-	  (if (not (null parent)) parent nil))))
-
-
-(defun get-node-depth (node)
-  (cond ((not (null (get-node-fgh node))) (second (get-node-fgh node)))
-	((null (get-node-parent node)) 1)
-	(t (1+ (get-node-depth (get-node-parent node))))))
-
+          (let ((score (parse-integer (nth (first coordinates-player1) (nth (second coordinates-player1) board)))))
+            (if (not (null parent)) (+ score (get-node-score-player1 parent)) score))
+          (let ((score (parse-integer (nth (first coordinates-player2) (nth (second coordinates-player2) board)))))
+            (if (not (null parent)) (+ score (get-node-score-player2 parent)) score))
+          (if (not (null parent)) parent nil))))
 
 (defun get-node-state (node)
   (first node))
 
-
-(defun get-node-score (node)
+(defun get-node-score-player1 (node)
   (second node))
 
-
-(defun get-node-parent (node)
+(defun get-node-score-player2 (node)
   (third node))
 
-
-(defun get-node-fgh (node)
+(defun get-node-parent (node)
   (fourth node))
-
 
 (defun partenogenese (node player)
   "Create the node successors."
@@ -208,8 +202,8 @@
 	       (if (null (gethash (first doubles) current-state))
 		   (setf (gethash (first doubles) current-state) "#DBL")))))))
 
-(defun init-list-opened-nodes(player)
-  "Initializes the open list of nodes for the correspondent player"
+(defun initialize-game(player)
+  "Initializes the game by putting the player1 and player2 in the space with more value in the corresponding line."
   (let ((nodes '()))
     (mapcar #'(lambda (value)
                 "Creates the nodes with the values"

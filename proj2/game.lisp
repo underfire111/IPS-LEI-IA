@@ -59,14 +59,17 @@
 
 ;; ### Knight ##############################################################################
 
-(defun knight-start-position (x y player)
+(defun knight-start-position (player1-coordinates player2-coordinates)
   "Places the knight at the board"
-  (let ((new-state (make-hash-table :test 'equal))
-	(value (nth x (nth y board))))
-    (setf (gethash player new-state) (list x y))
-    (setf (gethash (list x y) new-state) "#INI")
-    (remove-symmetric-or-double new-state value)
+  (let ((new-state (make-hash-table :test 'equal)))
+    (setf (gethash "player1" new-state) player1-coordinates)
+    (setf (gethash "player2" new-state) player2-coordinates)
+    (setf (gethash player1-coordinates new-state) "#INI P1")
+    (setf (gethash player2-coordinates new-state) "#INI P2")
+    (remove-symmetric-or-double new-state (nth (first player1-coordinates) (nth (second player1-coordinates) board)))
+    (remove-symmetric-or-double new-state (nth (first player2-coordinates) (nth (second player2-coordinates) board)))
     new-state))
+
 
 
 (defun knight-can-move-to (current-state player)
@@ -111,22 +114,19 @@
 ;; state score-player1 score-player2 parent
 ;;   1        2             3           4
 
-(defun create-node (state player &optional node)
+(defun create-node (state &optional parent)
   "Creates a new node."
-  (let* ((coordinates (gethash player state))
-	 (score (parse-integer (nth (first coordinates) (nth (second coordinates) board)))))
+  (let ((coordinates-player1 (gethash "player1" state))
+        (coordinates-player2 (gethash "player2" state)))
     (list state
-          (cond ((equal player 'player1)
-                 (if (not (null node)) (+ score (get-node-score node)) score)
-                 (if (not (null node)) node nil))
-                (t
-                 (if (not (null node)) (+ score (second (get-node-score node))) score)
-                 (if (not (null node)) node nil))))))
-
+          (let ((score (parse-integer (nth (first coordinates-player1) (nth (second coordinates-player1) board)))))
+            (if (not (null parent)) (+ score (get-node-score-player1 parent)) score))
+          (let ((score (parse-integer (nth (first coordinates-player2) (nth (second coordinates-player2) board)))))
+            (if (not (null parent)) (+ score (get-node-score-player2 parent)) score))
+          (if (not (null parent)) parent nil))))
 
 (defun get-node-state (node)
   (first node))
-
 
 (defun get-node-score-player1 (node)
   (second node))
@@ -139,19 +139,10 @@
 
 (defun partenogenese (node player)
   "Create the node successors."
-  (if (equal node 'root)
-      (init-list-opened-nodes player)
-      (mapcar #'
-       (lambda (coordinates)
-	 "Creates a node moving the knight to the coordinates."
-	 (let ((child
-		 (create-node
-		  (knight-move-to
-		   (clone-hash-table
-		    (get-node-state node))
-		   coordinates)
-		  node)))))
-       (remove-nil (knight-can-move-to (get-node-state node))))))
+      (mapcar #'(lambda (coordinates)
+                  "Creates a node moving the knight to the coordinates."
+                  (create-node (knight-move-to (clone-hash-table (get-node-state node)) coordinates player) node))
+              (remove-nil (knight-can-move-to (get-node-state node) "player1"))))
 
 ;; ### Utils ###############################################################################
 
@@ -172,7 +163,6 @@
              table)
     new-table))
 
-
 (defun get-doubles ()
   "Return a list with all doubles possible."
   '("99" "88" "77" "66" "55" "44" "33" "22" "11" "00"))
@@ -182,7 +172,6 @@
   (let ((values '()))
     (mapcar #'(lambda(value) (if (not (null value)) (push value values))) lst)
     (reverse values)))
-
 
 (defun remove-symmetric-or-double (current-state value)
   "Removes doubles or symetrics."
@@ -202,18 +191,17 @@
 	       (if (null (gethash (first doubles) current-state))
 		   (setf (gethash (first doubles) current-state) "#DBL")))))))
 
-(defun init-list-opened-nodes(player)
-  "Initializes the open list of nodes for the correspondent player"
-  (let ((nodes '()))
-    (mapcar #'(lambda (value)
-                "Creates the nodes with the values"
-                (let* ((coordinates (gethash value positions-map))
-                       (init-state (knight-start-position (first coordinates) (second coordinates) player))
-                       (child (create-node init-state player)))
-                  (push child nodes)))
-            (remove-nil (if (equal player 'player1) (first board) (first (reverse board)))))
-    (reverse nodes)))
-
-(defun sort-list-opened-nodes-ascending (lst)
-  "Sort the open nodes list by nodes f value."
-  (sort lst #'(lambda (n1 n2) (< (first (get-node-score n1)) (first (get-node-score n2))))))
+(defun max-line(line)
+  "Returns the maximum value in the line"
+  (let* ((numeric-values (mapcar #'(lambda(value)
+                                     "Parses the values to int"
+                                     (if (null value) 0 (parse-integer value))) 
+                                 line))
+         (maximum (apply #'max numeric-values)))
+    (position maximum numeric-values)))
+                   
+(defun initialize-game()
+  "Initializes the game putting the players in the space with more points, in the corresponding line."
+  (let ((player1-position (list (max-line (first board)) 0))
+        (player2-position (list (max-line (tenth board)) 9)))
+    (create-node (knight-start-position player1-position player2-position))))
