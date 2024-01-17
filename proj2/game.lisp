@@ -120,9 +120,9 @@
         (coordinates-player2 (gethash "player2" state)))
     (list state
           (let ((score (parse-integer (nth (first coordinates-player1) (nth (second coordinates-player1) board)))))
-            (if (not (null parent)) (+ score (get-node-score-player1 parent)) score))
+            (if parent (+ score (get-node-score-player1 parent)) score))
           (let ((score (parse-integer (nth (first coordinates-player2) (nth (second coordinates-player2) board)))))
-            (if (not (null parent)) (+ score (get-node-score-player2 parent)) score))
+            (if parent (+ score (get-node-score-player2 parent)) score))
           (if (not (null parent)) parent nil))))
 
 (defun get-node-state (node)
@@ -142,7 +142,7 @@
       (mapcar #'(lambda (coordinates)
                   "Creates a node moving the knight to the coordinates."
                   (create-node (knight-move-to (clone-hash-table (get-node-state node)) coordinates player) node))
-              (remove-nil (knight-can-move-to (get-node-state node) "player1"))))
+              (remove-nil (knight-can-move-to (get-node-state node) player))))
 
 ;; ### Utils ###############################################################################
 

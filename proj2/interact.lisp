@@ -26,7 +26,7 @@
 
 ;; ### Output ###############################################################################
 
-(defun print-board (board &optional curr-state)
+(defun print-board (&optional curr-state)
   "Prints the board"
   (cond ((null board) nil)
         (t (mapcar #'(lambda(line)
@@ -34,13 +34,13 @@
                        (mapcar #'(lambda(value)
                                    "Prints the value in the line"
                                    (let ((coordinates (gethash value positions-map)))
-                                   (cond ((or (null value) (and curr-state )) (format t "-- "))
-                                         ((and curr-state)
-                                          (cond ((gethash coordinates curr-state) (format t "-- "))
-                                                ((equal coordinates (gethash "p1" curr-state)) (format t "P1 "))
-                                                ((equal coordinates (gethash "p2" curr-state)) (format t "P2 "))
-                                                (t (format t "~a " value))))
-                                         (t (format t "~a " value)))))
+                                     (cond ((or (null value)) (format t "-- "))
+                                           (curr-state
+                                            (cond ((equal coordinates (gethash "player1" curr-state)) (format t "P1 "))
+                                                  ((equal coordinates (gethash "player2" curr-state)) (format t "P2 "))
+                                                  ((gethash coordinates curr-state) (format t "-- "))
+                                                  (t (format t "~a " value))))
+                                           (t (format t "~a " value)))))
                                line)
                        (format t "~%"))
                    board))))
@@ -65,14 +65,15 @@
   (setf positions-map (make-hash-table :test 'equal))
   (populate-positions-map board)
   (format t "Board:~%")
-  (print-board board)
+  (print-board)
   (format t "Do you want a score in the game? (Yes or No) ")
   (let ((answer (read)))
     (cond ((or (equal answer 'yes) (equal answer 'Yes))
            (format t "How much? ")
            (setf score (get-number)))
           (t (setf score 4000)))) ;; 4000 impossible value to obtain due to the rule of the removed values. 
-  (let ((node (initialize-game))))
+  (let ((node (initialize-game)))
+    (print-board (get-node-state node)))
   (print "Success"))
 
 (defun jogar(state time)
