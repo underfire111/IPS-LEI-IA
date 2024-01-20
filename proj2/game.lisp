@@ -96,7 +96,8 @@
 (defun create-node (state player-one-score player-two-score &optional parent-node)
   (if (and state (numberp player-one-score) (numberp player-two-score))
       (list state player-one-score player-two-score
-	    (if parent-node parent-node nil))))
+	    (if parent-node parent-node nil)
+	    (if parent-node (1+ (get-node-depth parent-node)) 0))))
 
 
 (defun create-next-node (current-state parent-node current-player)
@@ -121,6 +122,14 @@
 	(t nil)))
 
 
+(defun get-node-depth (node)
+  (fifth node))
+
+
+(defun get-node-parent (node)
+  (fourth node))
+
+
 (defun get-node-state (node)
   (first node))
 
@@ -131,10 +140,6 @@
 
 (defun get-node-score-player-two (node)
   (third node))
-
-
-(defun get-node-parent (node)
-  (fourth node))
 
 
 (defun partenogenese (current-node current-player)
@@ -232,12 +237,14 @@
 					  player-two)))
       second-node)))
 
+
 (defun evaluate (node player)
   "Returns the difference of the scores between the players."
-  (let ((score1 (get-node-score-player1 node))
-        (score2 (get-node-score-player2 node)))
+  (let ((score1 (get-node-score-player-one node))
+        (score2 (get-node-score-player-two node)))
   (cond ((equal player "player1") (- score1 score2))
         (t (- score2 score1)))))
+
 
 (defun time-available(time-limit start)
   "Returns the percentage of time passed."
