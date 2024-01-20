@@ -208,10 +208,12 @@
 
 (defun evaluate(node player)
   "Returns the difference of the scores between the players."
-  (cond ((equal player "player1") (- (get-node-score-player1 node) (get-node-score-player2 node)))
-        (t (- (get-node-score-player2 node) (get-node-score-player1 node)))))
+  (let ((score1 (get-node-score-player1 node))
+        (score2 (get-node-score-player2 node)))
+  (cond ((equal player "player1") (- score1 score2))
+        (t (- score2 score1)))))
 
-(defun time-available(time-limit start-time)
-  "Returns the percentage of time left until the time limit"
-  (* 100 (/ (- (get-internal-real-time) start-time) time-limit))) 
+(defun time-available(time-limit start)
+  "Returns the percentage of time passed."
+  (* (/ (- (get-internal-real-time) start) 1000.0 (/ time-limit 1000)) 100))
   

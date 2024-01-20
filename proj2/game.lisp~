@@ -205,3 +205,13 @@
   (let ((player1-position (list (max-line (first board)) 0))
         (player2-position (list (max-line (tenth board)) 9)))
     (create-node (knight-start-position player1-position player2-position))))
+
+(defun evaluate(node player)
+  "Returns the difference of the scores between the players."
+  (cond ((equal player "player1") (- (get-node-score-player1 node) (get-node-score-player2 node)))
+        (t (- (get-node-score-player2 node) (get-node-score-player1 node)))))
+
+(defun time-available(time-limit start-time)
+  "Returns the percentage of time left until the time limit"
+  (* (/ (- (get-internal-real-time) start-time) 1000.0 (/ time-limit 1000)) 100))
+  
