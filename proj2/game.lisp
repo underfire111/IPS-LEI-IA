@@ -225,28 +225,106 @@
     (setf (gethash player-one root-state) nil)
     (setf (gethash player-two root-state) nil)
     (let* ((root (create-node root-state 0 0))
-	   (first-node (create-next-node (knight-move-to (get-node-state root)
-							 player-one-position
-							 player-one)
-					 root
-					 player-one))
-	   (second-node (create-next-node (knight-move-to (get-node-state first-node)
-							  player-two-position
-							  player-two)
-					  first-node
-					  player-two)))
+	   (first-node
+	     (create-next-node
+	      (knight-move-to
+	       (get-node-state root)
+	       player-one-position
+	       player-one)
+	      root
+	      player-one))
+	   (second-node
+	     (create-next-node
+	      (knight-move-to
+	       (get-node-state first-node)
+	       player-two-position
+	       player-two)
+	      first-node
+	      player-two)))
       second-node)))
 
 
-(defun evaluate (node player)
+(defun evaluate (current-node current-player)
   "Returns the difference of the scores between the players."
-  (let ((score1 (get-node-score-player-one node))
-        (score2 (get-node-score-player-two node)))
-  (cond ((equal player "player1") (- score1 score2))
-        (t (- score2 score1)))))
+  (let ((score-player-one (get-node-score-player-one current-node))
+        (score-player-two (get-node-score-player-two current-node)))
+  (cond ((equal current-player "player1") (- score-player-one score-player-two))
+        (t (- score-player-two score-player-one)))))
+
+
+(defun potato-logic (current-node player-one player-two)
+  (let ((coordinates
+	  (first (exclusive-elements
+		  (knight-can-move-to (get-node-state current-node) player-two)
+		  (knight-can-move-to (get-node-state (get-node-parent current-node)) player-two)))))
+    (if coordinates
+	(aux-potato-logic (- (get-node-score-player-two current-node)
+			     (get-node-score-player-two current-node))
+			  (get-node-depth current-node)
+			  (length (knight-can-move-to (get-node-state current-node) player-one))
+;; if size = 2 do something
+			  (parse-integer (nth (first coordinates) (nth (second coordinates) board)))
+			  (calculate-modifier (gethash player-one (get-node-state current-node))))
+	(aux-potato-logic (- (get-node-score-player-two current-node)
+			     (get-node-score-player-two current-node))
+			  (get-node-depth current-node)
+			  (length (knight-can-move-to (get-node-state current-node) player-one))
+			  0
+			  (calculate-modifier (gethash player-one (get-node-state current-node)))))))
+
+
+(defun potato-logic (current-node player-one player-two)
+  (let ((coordinates
+	  (first (exclusive-elements
+		  (knight-can-move-to (get-node-state current-node) player-two)
+		  (knight-can-move-to (get-node-state (get-node-parent current-node)) player-two)))))
+    (if coordinates
+	(aux-potato-logic (get-node-score-player-two current-node)
+			  (get-node-depth current-node)
+			  (length (remove-nil (knight-can-move-to (get-node-state current-node) player-one)))
+;; if size = 2 do something
+			  (parse-integer (nth (first coordinates) (nth (second coordinates) board)))
+			  (calculate-modifier (gethash player-one (get-node-state current-node))))
+	(aux-potato-logic (get-node-score-player-two current-node)
+       			  (get-node-depth current-node)
+			  (length (remove-nil (knight-can-move-to (get-node-state current-node) player-one)))
+			  0
+			  (calculate-modifier (gethash player-one (get-node-state current-node)))))))
+
+
+
+(defun aux-potato-logic (score depth moves-left player-two-losses modifier)
+  (let ((val1 (floor (* 10 (/ score (ceiling (expt (/ depth 2) 2))))))
+	(val2 (floor (* 6.125 moves-left (log (/ depth 2) 10))))
+	(val3 (floor (* player-two-losses (log (/ depth 2) 10)))))
+    (format t "~a ~a ~a ~a ~a~%" val1 moves-left val2 val3 (* modifier (+ val1 val2 val3)))
+    (* modifier (+ val1 val2 val3))))
+
+
+(defun calculate-modifier (pair)
+  (destructuring-bind (first second) pair
+    (cond
+      ((and (or (= first 0) (= first 9)) (or (= second 0) (= second 9)))
+       (/ 1 4))  ; (0 0), (0 9), (9 0), (9 9) - return 1/4
+      ((or (and (or (= first 0) (= first 9)) (<= 0 second 9))
+           (and (or (= second 0) (= second 9)) (<= 0 first 9)))
+       (/ 1 2))  ; (0 x), (x 0), (9 x), (x 9) where x is between 0 and 9 - return 1/2
+      (t 1))))    ; Other combinations - return 0
+
+
+(defun exclusive-elements (list1 list2)
+  "Returns a list of elements that are exclusive to either list1 or list2."
+  (let ((exclusive-elements '()))
+    (dolist (sub-list list1)
+      (unless (some (lambda (element) (equal element sub-list)) list2)
+        (push sub-list exclusive-elements)))
+    (dolist (sub-list list2)
+      (unless (some (lambda (element) (equal element sub-list)) list1)
+        (push sub-list exclusive-elements)))
+    (nreverse exclusive-elements)))
 
 
 (defun time-available(time-limit start)
   "Returns the percentage of time passed."
-  (* (/ (- (get-internal-real-time) start) 1000.0 (/ time-limit 1000)) 100))
+  (* (/ (- (get-internal-real-time) start) internal-time-units-per-second time-limit) 100))
   
