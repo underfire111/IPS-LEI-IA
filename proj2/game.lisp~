@@ -297,7 +297,7 @@
   (let ((val1 (floor (* 10 (/ score (ceiling (expt (/ depth 2) 2))))))
 	(val2 (floor (* 6.125 moves-left (log (/ depth 2) 10))))
 	(val3 (floor (* player-two-losses (log (/ depth 2) 10)))))
-    ;; (format t "~a ~a ~a ~a ~a~%" val1 moves-left val2 val3 (* modifier (+ val1 val2 val3)))
+    (format t "~a ~a ~a ~a ~a~%" val1 moves-left val2 val3 (* modifier (+ val1 val2 val3)))
     (* modifier (+ val1 val2 val3))))
 
 

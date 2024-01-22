@@ -26,23 +26,7 @@
 
 ;; ### Output ###############################################################################
 
-(defun write-solution-to-file (algorithm-result)
-  "Writes the current state and some information of the alghorithm to a file called log.dat."
-  (with-open-file (fd (get-folder-path "log.dat")
-                      :direction :output
-                      :if-exists :append
-                      :if-does-not-exist :create)
-    (format fd "################################~%")
-    (format fd "### Number of Nodes analised: ~a~%" (third algorithm-result))
-    (format fd "### Number of Min cuts: ~a~%" (fourth algorithm-result))
-    (format fd "### Number of Max cuts: ~a~%" (fifth algorithm-result))
-    (format fd "### Time: ~a~%" (sixth algorithm-result))
-    (format fd "################################~%~%")
-    (print-board (get-node-state (first algorithm-result)) fd)
-    (format fd "################################~%")
-    (format fd "################################~%~%")))
-
-(defun print-board (&optional curr-state (fd t))
+(defun print-board (&optional curr-state)
   "Prints the board"
   (cond ((null board) nil)
 	(t (mapcar
@@ -52,17 +36,17 @@
 		 #'(lambda (value)
 		     "Prints the value in the line"
 		     (let ((coordinates (gethash value positions-map)))
-		       (cond ((or (null value)) (format fd "-- "))
+		       (cond ((or (null value)) (format t "-- "))
 			     (curr-state
 			      (cond ((equal coordinates (gethash "player1" curr-state))
-				     (format fd "P1 "))
+				     (format t "♞1 "))
 				    ((equal coordinates (gethash "player2" curr-state))
-				     (format fd "P2 "))
-				    ((gethash coordinates curr-state) (format fd "-- "))
-				    (t (format fd "~a " value))))
-			     (t (format fd "~a " value)))))
+				     (format t "♞2 "))
+				    ((gethash coordinates curr-state) (format t "-- "))
+				    (t (format t "~a " value))))
+			     (t (format t "~a " value)))))
 		 line)
-		(format fd "~%"))
+		(format t "~%"))
 	    board))))
 
 (defun print-hash-table (tbl)
