@@ -262,3 +262,4 @@
   "Gets the node above height layers of node" 
   (cond ((equal root-depth current-depth) current-node)
         (t (get-move (get-node-parent current-node) (1- current-depth) root-depth))))
+		

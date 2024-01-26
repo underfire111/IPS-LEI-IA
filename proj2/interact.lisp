@@ -40,15 +40,14 @@
                       :direction :output
                       :if-exists :append
                       :if-does-not-exist :create)
-    (format fd "################################~%")
+    (format fd "######################################~%")
     (format fd "### Number of Nodes analised: ~a~%" (third algorithm-result))
     (format fd "### Number of Min cuts: ~a~%" (fourth algorithm-result))
     (format fd "### Number of Max cuts: ~a~%" (fifth algorithm-result))
     (format fd "### Time(s): ~a~%" (sixth algorithm-result))
-    (format fd "################################~%~%")
+    (format fd "######################################~%~%")
     (print-board (get-node-state (first algorithm-result)) fd)
-    (format fd "################################~%")
-    (format fd "################################~%~%")))
+    (format fd "######################################~%~%")))
 
 
 (defun print-board (&optional curr-state (fd t))
@@ -95,7 +94,8 @@
   (format t "~%Available moves:~%~%")
   (loop for (first second) in lst
         for index from 1
-        do (format t "~a) ~c~a~%" index (code-char (+ 65 first)) (1+ second))))
+        do (format t "~a) ~c~a (~a)~%" index (code-char (+ 65 first)) (1+ second)
+                   (get-board-value (list fisrt second)))))
 
 
 ;; ### Main ###############################################################################
@@ -149,7 +149,7 @@
   (format t "~%Player score: ~a~%" (get-node-score-player-one node))
   (format t "AI score: ~a~%" (get-node-score-player-two node))
   (format t "~%################ AI ################~%~%")
-  (setf node (alpha-beta node player2 player1 :depth max-depth))
+  (setf node (alpha-beta node player2 player1 max-depth))
   (print-board (get-node-state node))
   (format t "~%Player score: ~a~%" (get-node-score-player-one node))
   (format t "AI score: ~a~%" (get-node-score-player-two node))
@@ -170,5 +170,3 @@
       (format t "~%~a score: ~a~%" player1 (get-node-score-player-one node))
       (format t "~%~a score: ~a~%" player1 (get-node-score-player-two node)))
   (game-loop-ai-vs-ai node player2 player1))
-
-
