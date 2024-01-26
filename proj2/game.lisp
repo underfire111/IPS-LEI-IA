@@ -25,7 +25,7 @@
 			(setf (nth n lst) (nth k lst))
 			(setf (nth k lst) temp)		    
 			(shuffle-helper lst (1- n)))))))
-  (shuffle-helper lst (1- (length lst)))))
+    (shuffle-helper lst (1- (length lst)))))
 
 
 (defun mount-board (lst)
@@ -47,8 +47,8 @@
 	(if (not (null value))
 	    (setf (gethash value positions-map) position))))))
 
-;; ### Knight ##############################################################################
 
+;; ### Knight ##############################################################################
 
 (defun knight-can-move-to (current-state current-player)
   "Check for all possible moves."
@@ -64,7 +64,7 @@
 			   (nth new-x (nth new-y board)))
 		      (push (list new-x new-y) moves))
 		     (t (push nil moves)))))
-	   (reverse moves)))))
+	   (remove-nil (reverse moves))))))
 
 
 (defun knight-can-move (current-state current-player)
@@ -76,14 +76,14 @@
 (defun knight-move-to (current-state coordinates current-player)
   "If possible, move the knight to the given location"
   (cond (current-state
-	(cond (coordinates
-	       (let ((value (nth (first coordinates) (nth (second coordinates) board))))
-		 (setf (gethash current-player current-state) coordinates)
-		 (setf (gethash coordinates current-state) "#MOV")
-		 (remove-symmetric-or-double current-state value)))
-	      (t (error "Invalid move!")))
-    current-state)
-  (t (error "Invalid state!"))))
+	 (cond (coordinates
+		(let ((value (nth (first coordinates) (nth (second coordinates) board))))
+		  (setf (gethash current-player current-state) coordinates)
+		  (setf (gethash coordinates current-state) "#MOV")
+		  (remove-symmetric-or-double current-state value)))
+	       (t (error "Invalid move!")))
+	 current-state)
+	(t (error "Invalid state!"))))
 
 
 ;; ### Node ################################################################################
@@ -92,34 +92,11 @@
 ;; state score-player1 score-player2 parent
 ;;   1        2             3           4
 
-
 (defun create-node (state player-one-score player-two-score &optional parent-node)
   (if (and state (numberp player-one-score) (numberp player-two-score))
       (list state player-one-score player-two-score
 	    (if parent-node parent-node nil)
 	    (if parent-node (1+ (get-node-depth parent-node)) 0))))
-
-
-(defun create-next-node (current-state parent-node current-player)
-  "Creates a new node."
-  (cond ((and current-state parent-node
-	      (or (equal current-player "player1") (equal current-player "player2")))
-	 (let* ((player-coordinates (gethash current-player current-state))
-	       (score (parse-integer
-		       (nth (first player-coordinates)
-			    (nth (second player-coordinates) board)))))
-	   (cond ((equal current-player "player1")
-		  (create-node current-state
-			       (+ score (get-node-score-player-one parent-node))
-			       (get-node-score-player-two parent-node)
-			       parent-node))
-		 ((equal current-player "player2")
-		  (create-node current-state
-			       (get-node-score-player-one parent-node)
-			       (+ score (get-node-score-player-two parent-node))
-			       parent-node))
-		 (t nil))))
-	(t nil)))
 
 
 (defun get-node-depth (node)
@@ -142,22 +119,52 @@
   (third node))
 
 
+(defun create-next-node (current-state parent-node current-player)
+  "Creates a new node."
+  (cond ((and current-state parent-node
+	      (or (equal current-player "player1") (equal current-player "player2")))
+	 (let* ((player-coordinates (gethash current-player current-state))
+		(score (get-board-value player-coordinates)))
+	   (cond ((equal current-player "player1")
+		  (create-node current-state
+			       (+ score (get-node-score-player-one parent-node))
+			       (get-node-score-player-two parent-node)
+			       parent-node))
+		 ((equal current-player "player2")
+		  (create-node current-state
+			       (get-node-score-player-one parent-node)
+			       (+ score (get-node-score-player-two parent-node))
+			       parent-node))
+		 (t nil))))
+	(t nil)))
+
+
 (defun partenogenese (current-node current-player)
   "Create the node successors."
-   (mapcar
-    #'(lambda (coordinates)
-	"Creates a node moving the knight to the coordinates."
-	(create-next-node
-	 (knight-move-to
-	  (clone-hash-table (get-node-state current-node))
-	  coordinates
-	  current-player)
-	 current-node
-	 current-player))
-    (remove-nil (knight-can-move-to (get-node-state current-node) current-player))))
+  (mapcar
+   #'(lambda (coordinates)
+       "Creates a node moving the knight to the coordinates."
+       (create-next-node
+	(knight-move-to
+	 (clone-hash-table (get-node-state current-node))
+	 coordinates
+	 current-player)
+	current-node
+	current-player))
+   (knight-can-move-to (get-node-state current-node) current-player)))
 
 
 ;; ### Utils ###############################################################################
+
+(defun get-board-value (coordinates)
+  "Returns the value at the position xy from the board."
+  (parse-integer (nth (first coordinates) (nth (second coordinates) board))))
+
+
+(defun get-doubles ()
+  "Return a list with all doubles possible."
+  '("99" "88" "77" "66" "55" "44" "33" "22" "11" "00"))
+
 
 (defun get-hash-table-keys (tbl)
   "Returns a list with only the values in the board as strings."
@@ -173,11 +180,6 @@
 		    :size (hash-table-size tbl))))
     (maphash #'(lambda (key value) (setf (gethash key new-table) value)) tbl)
     new-table))
-
-
-(defun get-doubles ()
-  "Return a list with all doubles possible."
-  '("99" "88" "77" "66" "55" "44" "33" "22" "11" "00"))
 
 
 (defun remove-nil (lst)
@@ -205,18 +207,17 @@
 	       (if (null (gethash (first doubles) current-state))
 		   (setf (gethash (first doubles) current-state) "#DBL")))))))
 
+
 (defun max-line (line)
   "Returns the maximum value in the line"
-  (let* ((numeric-values (mapcar #'(lambda(value)
-                                     "Parses the values to int"
-                                     (if (null value) 0 (parse-integer value))) 
-                                 line))
+  (let* ((numeric-values
+	   (mapcar #'(lambda (value) (if (null value) 0 (parse-integer value))) line))
          (maximum (apply #'max numeric-values)))
     (position maximum numeric-values)))
 
 
 (defun initialize-game ()
-  "Initializes both players position."
+  "Initializes both players position at the game board."
   (let ((player-one "player1")
 	(player-two "player2")
 	(player-one-position (list (max-line (first board)) 0))
@@ -248,83 +249,16 @@
   "Returns the difference of the scores between the players."
   (let ((score-player-one (get-node-score-player-one current-node))
         (score-player-two (get-node-score-player-two current-node)))
-  (cond ((equal current-player "player1") (- score-player-one score-player-two))
-        (t (- score-player-two score-player-one)))))
-
-
-(defun potato-logic (current-node player-one player-two)
-  (let ((coordinates
-	  (first (exclusive-elements
-		  (knight-can-move-to (get-node-state current-node) player-two)
-		  (knight-can-move-to (get-node-state (get-node-parent current-node)) player-two)))))
-    (if coordinates
-	(aux-potato-logic (- (get-node-score-player-two current-node)
-			     (get-node-score-player-two current-node))
-			  (get-node-depth current-node)
-			  (length (knight-can-move-to (get-node-state current-node) player-one))
-;; if size = 2 do something
-			  (parse-integer (nth (first coordinates) (nth (second coordinates) board)))
-			  (calculate-modifier (gethash player-one (get-node-state current-node))))
-	(aux-potato-logic (- (get-node-score-player-two current-node)
-			     (get-node-score-player-two current-node))
-			  (get-node-depth current-node)
-			  (length (knight-can-move-to (get-node-state current-node) player-one))
-			  0
-			  (calculate-modifier (gethash player-one (get-node-state current-node)))))))
-
-
-(defun potato-logic (current-node player-one player-two)
-  (let ((coordinates
-	  (first (exclusive-elements
-		  (knight-can-move-to (get-node-state current-node) player-two)
-		  (knight-can-move-to (get-node-state (get-node-parent current-node)) player-two)))))
-    (if coordinates
-	(aux-potato-logic (get-node-score-player-two current-node)
-			  (get-node-depth current-node)
-			  (length (remove-nil (knight-can-move-to (get-node-state current-node) player-one)))
-;; if size = 2 do something
-			  (parse-integer (nth (first coordinates) (nth (second coordinates) board)))
-			  (calculate-modifier (gethash player-one (get-node-state current-node))))
-	(aux-potato-logic (get-node-score-player-two current-node)
-       			  (get-node-depth current-node)
-			  (length (remove-nil (knight-can-move-to (get-node-state current-node) player-one)))
-			  0
-			  (calculate-modifier (gethash player-one (get-node-state current-node)))))))
-
-
-
-(defun aux-potato-logic (score depth moves-left player-two-losses modifier)
-  (let ((val1 (floor (* 10 (/ score (ceiling (expt (/ depth 2) 2))))))
-	(val2 (floor (* 6.125 moves-left (log (/ depth 2) 10))))
-	(val3 (floor (* player-two-losses (log (/ depth 2) 10)))))
-    ;; (format t "~a ~a ~a ~a ~a~%" val1 moves-left val2 val3 (* modifier (+ val1 val2 val3)))
-    (* modifier (+ val1 val2 val3))))
-
-
-(defun calculate-modifier (pair)
-  (destructuring-bind (first second) pair
-    (cond
-      ((and (or (= first 0) (= first 9)) (or (= second 0) (= second 9)))
-       (/ 1 4))  ; (0 0), (0 9), (9 0), (9 9) - return 1/4
-      ((or (and (or (= first 0) (= first 9)) (<= 0 second 9))
-           (and (or (= second 0) (= second 9)) (<= 0 first 9)))
-       (/ 1 2))  ; (0 x), (x 0), (9 x), (x 9) where x is between 0 and 9 - return 1/2
-      (t 1))))    ; Other combinations - return 0
-
-
-(defun exclusive-elements (list1 list2)
-  "Returns a list of elements that are exclusive to either list1 or list2."
-  (let ((exclusive-elements '()))
-    (dolist (sub-list list1)
-      (unless (some (lambda (element) (equal element sub-list)) list2)
-        (push sub-list exclusive-elements)))
-    (dolist (sub-list list2)
-      (unless (some (lambda (element) (equal element sub-list)) list1)
-        (push sub-list exclusive-elements)))
-    (nreverse exclusive-elements)))
+    (cond ((equal current-player "player1") (- score-player-one score-player-two))
+	  (t (- score-player-two score-player-one)))))
 
 
 (defun time-available(time-limit start)
   "Returns the percentage of time passed."
   (* (/ (- (get-internal-real-time) start) internal-time-units-per-second time-limit) 100))
-  
+
+
+(defun get-move (current-node current-depth root-depth)
+  "Gets the node above height layers of node" 
+  (cond ((equal root-depth current-depth) current-node)
+        (t (get-move (get-node-parent current-node) (1- current-depth) root-depth))))
