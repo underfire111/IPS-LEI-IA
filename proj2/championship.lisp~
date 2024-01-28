@@ -6,15 +6,32 @@
 (defparameter board nil)
 (defparameter positions-map nil)
 (defparameter max-time nil)
-(defparameter max-depth nil)
+(defparameter max-depth 15)
 (defparameter time-cap-percentage 80)
 
 ;; ### Main Function ########################################################################
 
-(defun tmp()
-                   (let ((test (estado-exemplo)))
-                     (setf (nth 0 (nth 0 (first test))) nil)
-                   test))
+(defun unset-board()
+  "Returns the board, but with the value as numbers instead of strings."
+  (mapcar #'(lambda(line)
+              (mapcar #'(lambda(value)
+                          (cond ((null value) nil)
+                                ((numberp value) value)
+                                (t (parse-integer value)))) line))
+          board))
+
+(defun get-normal-node(node)
+  "Returns a node with the structure of the championship."
+  (mapcar #'(lambda(value)
+              (cond ((or (equal value "player1") (equal value "player2")))
+                    (t (setf (nth (first value) (nth (second value) board)) nil))))
+          (get-hash-table-keys (get-node-state node)))
+  (let ((p1-position (gethash "player1" (get-node-state node)))
+        (p2-position (gethash "player2" (get-node-state node))))
+    (setf (nth (first p1-position) (nth (second p1-position) board)) -1)
+    (setf (nth (first p2-position) (nth (second p2-position) board)) -2))
+  (list (unset-board) (list (get-node-score-player-one node) (get-node-score-player-two node))))
+  
 
 (defun print-board (&optional curr-state (fd t))
   "Prints the board"
@@ -58,7 +75,7 @@
   "Main function for the championship"
   (setf max-time time)
   (let* ((positions (set-up (first no) (first (second no)) (second (second no)))))
-    (print-hash-table (first (alpha-beta (initialize-game (first positions) (second positions)) "player1" "player2" 9)))))
+    (get-normal-node (alpha-beta (initialize-game (first positions) (second positions)) "player1" "player2" 9))))
 (export 'jogar)
 
 (defun set-up(board-tmp score-player1 score-player2)

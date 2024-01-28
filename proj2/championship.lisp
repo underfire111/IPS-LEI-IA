@@ -5,8 +5,9 @@
 
 (defparameter board nil)
 (defparameter positions-map nil)
+(defparameter start-time nil)
 (defparameter max-time nil)
-(defparameter max-depth 15)
+(defparameter max-depth 10)
 (defparameter time-cap-percentage 80)
 
 ;; ### Main Function ########################################################################
@@ -73,6 +74,7 @@
 
 (defun jogar(no time)
   "Main function for the championship"
+  (setf start-time (get-internal-real-time))
   (setf max-time time)
   (let* ((positions (set-up (first no) (first (second no)) (second (second no)))))
     (get-normal-node (alpha-beta (initialize-game (first positions) (second positions)) "player1" "player2" 9))))
@@ -107,7 +109,6 @@
 (defun alpha-beta (root player1 player2 depth)
   "Alpha Beta"
   (if (not (knight-can-move (get-node-state root) player1)) (return-from alpha-beta root))
-  (let ((start-time (get-internal-real-time)))
     (labels
 	((max-layer (parent current-player depth alpha beta)
 	   "Max layer in the algorithm."
@@ -142,7 +143,7 @@
       (let ((result (max-layer root player1 depth (list 0 most-negative-fixnum)
 			       (list 0 most-positive-fixnum))))
         (get-move (first result) (get-node-depth (first result))
-		  (1+ (get-node-depth root)))))))
+		  (1+ (get-node-depth root))))))
 
 ;; ### Knight ##############################################################################
 
