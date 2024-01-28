@@ -32,45 +32,6 @@
     (setf (nth (first p1-position) (nth (second p1-position) board)) -1)
     (setf (nth (first p2-position) (nth (second p2-position) board)) -2))
   (list (unset-board) (list (get-node-score-player-one node) (get-node-score-player-two node))))
-  
-
-(defun print-board (&optional curr-state (fd t))
-  "Prints the board"
-  (format fd "   | A  B  C  D  E  F  G  H  I  J  ~%")
-  (format fd "---|-------------------------------~%")
-  (let ((line-number '("01 | " "02 | " "03 | " "04 | " "05 | " "06 | " "07 | " "08 | " "09 | " "10 | ")))
-    (cond ((null board) nil)
-          (t (mapcar
-              #'(lambda (line)
-                  "Prints the line of the board and a new line at the end"
-                  (format fd (pop line-number))
-                  (mapcar
-                   #'(lambda (value)
-                       "Prints the value in the line"
-                       (let ((coordinates (gethash value positions-map)))
-                         (cond ((or (null value)) (format fd "-- "))
-                               (curr-state
-                                (cond ((equal coordinates (gethash "player1" curr-state))
-                                       (format fd "P1 "))
-                                      ((equal coordinates (gethash "player2" curr-state))
-                                       (format fd "P2 "))
-                                      ((gethash coordinates curr-state) (format fd "-- "))
-                                      (t (format fd "~a " value))))
-                               (t (format fd "~a " value)))))
-                   line)
-                  (format fd "~%"))
-	      board)))))
-
-(defun print-hash-table (tbl)
-  "Print a map"
-  (maphash #'(lambda (key value) (format t "Key: ~a, Position: ~a~%" key value)) tbl))
-
-
-(defun print-hash-table-sorted (tbl)
-  "Print a map with its keys sorted"
-  (let ((keys (get-hash-table-keys tbl)))
-    (dolist (key (sort keys 'string<))
-      (format t "Key: ~a, Position: ~a~%" key (gethash key tbl)))))
 
 (defun jogar(no time)
   "Main function for the championship"
