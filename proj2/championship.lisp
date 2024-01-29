@@ -24,11 +24,16 @@
   "Main function for the tournament."
   (setf start-time (get-internal-real-time))
   (setf max-time (/ time 1000))
-  (let* ((positions (set-up (first node) (first (second node)) (second (second node)))))
-    (get-normal-node (alpha-beta (initialize-game (first positions) (second positions))
-				 "player1" "player2" max-depth))))
+  (let* ((positions (set-up (first node))))
+    (get-normal-node
+     (alpha-beta
+      (initialize-game (first positions) (second positions)
+		       (first (second node)) (second (second node)))
+      "player1" "player2" max-depth))))
+
 
 (export 'jogar)
+
 
 (defun unset-board ()
   "Returns the board, but with the value as numbers instead of strings."
@@ -55,7 +60,7 @@
 			    (get-node-score-player-two node))))
 
 
-(defun set-up (board-tmp score-player-one score-player-two)
+(defun set-up (board-tmp)
   "Sets the board and the positions map."
   (let ((knight1-position '()) (knight2-position '()) (tmp '()) (result '()))
     (dotimes (i 10)
@@ -63,10 +68,10 @@
         (let ((value (nth j (nth i board-tmp))))
           (cond ((equal value -1) 
                  (setf knight1-position (list j i))
-                 (push (format-number score-player-one) tmp))
+                 (push nil tmp))
                 ((equal value -2)
                  (setf knight2-position (list j i))
-                 (push (format-number score-player-two) tmp))
+                 (push nil tmp))
                 ((numberp value) (push (format-number value) tmp))
                 (t (push nil tmp)))))
       (push (reverse tmp) result)
@@ -306,28 +311,12 @@
   (format nil "~2,'0D" number))
 
 
-(defun initialize-game (player-one-position player-two-position)
+(defun initialize-game (player-one-position player-two-position
+			player-one-score player-two-score)
   "Initializes both players position at the game board."
   (let ((player-one "player1")
 	(player-two "player2")
 	(root-state (make-hash-table :test 'equal)))
-    (setf (gethash player-one root-state) nil)
-    (setf (gethash player-two root-state) nil)
-    (let* ((root (create-node root-state 0 0))
-	   (first-node
-	     (create-next-node
-	      (knight-move-to
-	       (get-node-state root)
-	       player-one-position
-	       player-one)
-	      root
-	      player-one))
-	   (second-node
-	     (create-next-node
-	      (knight-move-to
-	       (get-node-state first-node)
-	       player-two-position
-	       player-two)
-	      first-node
-	      player-two)))
-      second-node)))
+    (setf (gethash player-one root-state) player-one-position)
+    (setf (gethash player-two root-state) player-two-position)
+    (create-node root-state player-one-score player-two-score)))
